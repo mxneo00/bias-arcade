@@ -1,0 +1,18 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 64px 32px;
+    gap: 32px;
+    
+    --background: #fff;
+    --foreground: #000;
+    
+    --text-primary: #000;
+    --text-secondary: #666;
+    
+    --button-primary-hover: #eee;
+    --button-secondary-hover: #f5f5f5;
+    --button-secondary-border: #ccc;
+    background-color: var(--background);
+}
