@@ -17,7 +17,13 @@ export default function Home() {
           <Link href="/games" className={styles.primary}>
             Browse Games
           </Link>
-          <Link href="/api/auth/spotify/login" className={styles.secondary}>
+          <Link href="/login" className={styles.secondary}>
+            Log In
+          </Link>
+          <Link href="/signup" className={styles.secondary}>
+            Sign Up
+          </Link>
+          <Link href="/api/integrations/spotify/login" className={styles.secondary}>
             Connect Spotify
           </Link>
         </section>

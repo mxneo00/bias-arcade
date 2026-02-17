@@ -16,3 +16,29 @@
     --button-secondary-border: #ccc;
     background-color: var(--background);
 }
+
+.actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.actions a,
+.logoutButton {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.actions a:hover,
+.logoutButton:hover {
+    background: var(--button-secondary-hover);
+}
