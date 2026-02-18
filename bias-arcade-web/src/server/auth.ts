@@ -7,8 +7,11 @@ import { db } from "@/server/db";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
+  secret:
+    process.env.NEXTAUTH_SECRET ??
+    (process.env.NODE_ENV === "development" ? "dev-fallback-auth-secret" : undefined),
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
   pages: {
     signIn: "/login",
@@ -52,9 +55,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    session({ session, token }) {
+      if (session.user && token.sub) {
+        session.user.id = token.sub;
       }
 
       return session;
