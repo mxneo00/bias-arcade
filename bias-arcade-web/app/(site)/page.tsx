@@ -23,9 +23,6 @@ export default function Home() {
           <Link href="/signup" className={styles.secondary}>
             Sign Up
           </Link>
-          <Link href="/api/integrations/spotify/login" className={styles.secondary}>
-            Connect Spotify
-          </Link>
         </section>
       </main>
     </div>
