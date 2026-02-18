@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/server/auth";
+import { SiteHeader } from "@/components/layout/site-header";
 
 import GuessTheSongClient from "../../../../src/components/game/guess-the-song-client";
 import styles from "./page.module.css";
@@ -12,8 +13,10 @@ export default async function GuessTheSongPage() {
 	if (!session?.user) {
 		return (
 			<div className={styles.page}>
+				<SiteHeader isLoggedIn={false} />
+
 				<main className={styles.main}>
-					<section className={styles.header}>
+					<section className={styles.pageHeader}>
 						<div className={styles.headerRow}>
 							<h1>Guess the Song</h1>
 							<Link href="/games" className={styles.backLink}>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/server/auth";
+import { SiteHeader } from "@/components/layout/site-header";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -13,28 +14,7 @@ export default async function Home() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.logoMark} aria-hidden="true">
-            BA
-          </span>
-          <span className={styles.brandName}>Bias Arcade</span>
-        </div>
-
-        <nav className={styles.nav} aria-label="Main navigation">
-          <Link href="/games">Games</Link>
-          {isLoggedIn ? (
-            <Link href="/profile">Profile</Link>
-          ) : (
-            <>
-              <Link href="/login">Log In</Link>
-              <Link href="/signup" className={styles.navAccent}>
-                Sign Up
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      <SiteHeader isLoggedIn={isLoggedIn} />
 
       <main className={styles.main}>
         {isLoggedIn ? (

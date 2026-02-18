@@ -7,6 +7,7 @@ import {
 	SpotifyPlaybackProvider,
 	useSpotifyPlayback,
 } from "@/features/spotify/SpotifyPlaybackProvider";
+import { SiteHeader } from "@/components/layout/site-header";
 
 import styles from "./page.module.css";
 
@@ -132,8 +133,10 @@ function GuessTheSongContent() {
 
 	return (
 		<div className={styles.page}>
+			<SiteHeader isLoggedIn={true} />
+
 			<main className={styles.main}>
-				<section className={styles.header}>
+				<section className={styles.pageHeader}>
 					<div className={styles.headerRow}>
 						<h1>Guess the Song</h1>
 						<Link href="/games" className={styles.backLink}>

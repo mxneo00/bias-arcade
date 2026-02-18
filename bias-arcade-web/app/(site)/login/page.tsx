@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
+import { SiteHeader } from "@/components/layout/site-header";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
 	const router = useRouter();
+	const { data: session } = useSession();
+	const isLoggedIn = Boolean(session?.user);
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -45,8 +49,14 @@ export default function LoginPage() {
 
 	return (
 		<div className={styles.page}>
+			<SiteHeader isLoggedIn={isLoggedIn} />
+
 			<main className={styles.main}>
-				<h1>Log in</h1>
+				<section className={styles.pageHeader}>
+					<h1>Log in</h1>
+					<p>Sign in to continue to Bias Arcade.</p>
+				</section>
+
 				<form className={styles.form} onSubmit={handleSubmit}>
 					<label htmlFor="email">Email</label>
 					<input
