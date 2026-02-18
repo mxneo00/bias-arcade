@@ -1,5 +1,22 @@
 import { NextRequest, NextResponse  } from "next/server";
 
+function getSpotifyRedirectUri(request: NextRequest) {
+    const configuredUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
+
+    if (configuredUri) {
+        return new URL(configuredUri).toString();
+    }
+
+    const forwardedProto = request.headers.get('x-forwarded-proto');
+    const forwardedHost = request.headers.get('x-forwarded-host');
+
+    if (forwardedProto && forwardedHost) {
+        return `${forwardedProto}://${forwardedHost}/api/integrations/spotify/callback`;
+    }
+
+    return new URL('/api/integrations/spotify/callback', request.url).toString();
+}
+
 export async function GET(request: NextRequest) {
     const isProduction = process.env.NODE_ENV === "production";
     const url = new URL(request.url);
@@ -19,6 +36,14 @@ export async function GET(request: NextRequest) {
     const storedState = request.cookies.get('spotify_auth_state')?.value;
     const codeVerifier = request.cookies.get('spotify_code_verifier')?.value;
 
+    if (!storedState) {
+        console.error('Missing auth state cookie in Spotify callback');
+        return NextResponse.json(
+            { error: 'Missing auth state cookie in Spotify callback. Ensure you start from /api/integrations/spotify/login on the same host.' },
+            { status: 400 }
+        );
+    }
+
     if (state !== storedState) {
         console.error('State mismatch in Spotify callback');
         return NextResponse.json({ error: 'State mismatch in Spotify callback' }, { status: 400 });
@@ -29,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     const clientId = process.env.SPOTIFY_CLIENT_ID!;
-    const redirectUri = process.env.SPOTIFY_REDIRECT_URI!;
+    const redirectUri = getSpotifyRedirectUri(request);
 
     const body = new URLSearchParams();
     body.append('client_id', clientId);

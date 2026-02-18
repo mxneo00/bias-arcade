@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 function base64URLEncode(str: Buffer) {
@@ -9,9 +9,26 @@ function sha256(buffer: Buffer) {
     return crypto.createHash('sha256').update(buffer).digest();
 }
 
-export async function GET() {
+function getSpotifyRedirectUri(request: NextRequest) {
+  const configuredUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
+
+  if (configuredUri) {
+    return new URL(configuredUri).toString();
+  }
+
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const forwardedHost = request.headers.get('x-forwarded-host');
+
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}/api/integrations/spotify/callback`;
+  }
+
+  return new URL('/api/integrations/spotify/callback', request.url).toString();
+}
+
+export async function GET(request: NextRequest) {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const redirectUri = process.env.SPOTIFY_REDIRECT_URI;
+  const redirectUri = getSpotifyRedirectUri(request);
   const isProduction = process.env.NODE_ENV === 'production';
   const scope = ['user-read-private', 'user-read-email'].join(' ');
   
@@ -31,8 +48,20 @@ export async function GET() {
 
   const response = NextResponse.redirect(authUrl.toString());
 
-  response.cookies.set('spotify_code_verifier', codeVerifier, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
-  response.cookies.set('spotify_auth_state', state, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
+  response.cookies.set('spotify_code_verifier', codeVerifier, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10,
+  });
+  response.cookies.set('spotify_auth_state', state, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10,
+  });
 
   return response;
 }

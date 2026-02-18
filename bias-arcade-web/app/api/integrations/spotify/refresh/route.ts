@@ -27,6 +27,26 @@ export async function POST(request: NextRequest) {
 	const tokenData = await spotifyResponse.json();
 
 	if (!spotifyResponse.ok) {
+		const isRevokedRefreshToken =
+			tokenData?.error === "invalid_grant" &&
+			typeof tokenData?.error_description === "string" &&
+			tokenData.error_description.toLowerCase().includes("revoked");
+
+		if (isRevokedRefreshToken) {
+			const response = NextResponse.json(
+				{
+					error: "Spotify connection expired. Please reconnect your Spotify account.",
+					code: "SPOTIFY_REAUTH_REQUIRED",
+				},
+				{ status: 401 }
+			);
+
+			response.cookies.delete("spotify_access_token");
+			response.cookies.delete("spotify_refresh_token");
+
+			return response;
+		}
+
 		return NextResponse.json(
 			{ error: tokenData?.error_description ?? "Token refresh failed" },
 			{ status: spotifyResponse.status }

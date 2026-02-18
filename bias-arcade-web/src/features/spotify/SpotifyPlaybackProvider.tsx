@@ -85,13 +85,21 @@ async function getAccessToken(): Promise<string> {
     const response = await fetch('/api/integrations/spotify/refresh', {
         method: 'POST',
     });
-    if (!response.ok) {
-        throw new Error('Failed to refresh Spotify access token');
-    }
     const data = (await response.json()) as {
         accessToken?: string;
         access_token?: string;
+        error?: string;
+        code?: string;
     };
+
+    if (!response.ok) {
+        if (response.status === 401 && data.code === 'SPOTIFY_REAUTH_REQUIRED') {
+            throw new Error(data.error ?? 'Spotify connection expired. Please reconnect Spotify.');
+        }
+
+        throw new Error(data.error ?? 'Failed to refresh Spotify access token');
+    }
+
     const token = data.access_token ?? data.accessToken;
     if (!token) {
         throw new Error('No access token returned from refresh endpoint');

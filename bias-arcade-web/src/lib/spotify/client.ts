@@ -23,8 +23,21 @@ export async function getSpotifyAccessToken(request: NextRequest): Promise<strin
         cache: "no-store",
     });
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to refresh Spotify token: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+        let errorData: { error?: string; code?: string } | null = null;
+
+        try {
+            errorData = await response.json();
+        } catch {
+            errorData = null;
+        }
+
+        if (response.status === 401 && errorData?.code === "SPOTIFY_REAUTH_REQUIRED") {
+            throw new Error("Spotify re-authorization required");
+        }
+
+        throw new Error(
+            `Failed to refresh Spotify token: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`
+        );
     }
     const data: Partial<SpotifyTokenResponse> = await response.json();
     if (!data.access_token) {

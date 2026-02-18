@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSession } from "next-auth/react";
 
@@ -11,19 +11,15 @@ import styles from "./page.module.css";
 
 export default function LoginPage() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { data: session } = useSession();
 	const isLoggedIn = Boolean(session?.user);
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [callbackUrl, setCallbackUrl] = useState("/");
+	const callbackUrl = searchParams.get("callbackUrl") ?? "/";
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
-
-	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		setCallbackUrl(params.get("callbackUrl") ?? "/");
-	}, []);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
