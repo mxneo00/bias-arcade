@@ -24,7 +24,6 @@
 }
 
 .main {
-    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -85,6 +84,102 @@
     color: var(--text-secondary);
 }
 
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--foreground);
+}
+
+.panelHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.panelHeader h2 {
+    font-size: 24px;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+.panelHeader p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.setupControls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.modeSelector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 240px;
+}
+
+.modeSelector span {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.modeSelector select {
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    color: var(--text-primary);
+    padding: 0 12px;
+}
+
+.modeSelector select:disabled {
+    opacity: 0.8;
+}
+
+.primaryButton {
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 0 16px;
+    cursor: pointer;
+    background: var(--background);
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.topBar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    padding: 10px 12px;
+}
+
+.statItem span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.statItem strong {
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
 .controls {
     display: flex;
     gap: 12px;
@@ -134,6 +229,77 @@
     background: var(--button-secondary-hover);
 }
 
+.placeholders {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.placeholderBox {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 16px;
+    border: 1px dashed var(--button-secondary-border);
+    padding: 16px;
+}
+
+.placeholderBox h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.placeholderBox p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.placeholderBox button {
+    width: fit-content;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 0 14px;
+    cursor: pointer;
+    background: var(--background);
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.placeholderBox button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pointsBreakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 16px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    padding: 16px;
+}
+
+.pointsBreakdown h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.pointsBreakdown p,
+.pointsBreakdown li {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.pointsBreakdown ul {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .result {
     font-size: 16px;
     color: var(--text-primary);
@@ -144,12 +310,17 @@
         background: var(--button-secondary-hover);
     }
 
+    .primaryButton:hover {
+        background: var(--button-secondary-hover);
+    }
+
     .playButton:hover {
         background: var(--button-secondary-hover, #f5f5f5);
     }
 
     .controls button:hover:not(:disabled),
-    .option:hover:not(:disabled) {
+    .option:hover:not(:disabled),
+    .placeholderBox button:hover:not(:disabled) {
         background: var(--button-secondary-hover);
     }
 }
@@ -172,7 +343,19 @@
         align-items: flex-start;
     }
 
+    .panel {
+        padding: 20px;
+    }
+
+    .topBar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .options {
+        grid-template-columns: 1fr;
+    }
+
+    .placeholders {
         grid-template-columns: 1fr;
     }
 }
