@@ -4,11 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
+import { SiteHeader } from "@/components/layout/site-header";
 import styles from "./page.module.css";
 
 export default function SignupPage() {
 	const router = useRouter();
+	const { data: session } = useSession();
+	const isLoggedIn = Boolean(session?.user);
 
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
@@ -67,8 +71,14 @@ export default function SignupPage() {
 
 	return (
 		<div className={styles.page}>
+			<SiteHeader isLoggedIn={isLoggedIn} />
+
 			<main className={styles.main}>
-				<h1>Create account</h1>
+				<section className={styles.pageHeader}>
+					<h1>Create account</h1>
+					<p>Sign up to start playing Bias Arcade.</p>
+				</section>
+
 				<form className={styles.form} onSubmit={handleSubmit}>
 					<label htmlFor="name">Name</label>
 					<input

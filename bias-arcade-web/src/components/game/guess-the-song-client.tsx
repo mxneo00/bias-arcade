@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
 	SpotifyPlaybackProvider,
 	useSpotifyPlayback,
 } from "@/features/spotify/SpotifyPlaybackProvider";
+import { SiteHeader } from "@/components/layout/site-header";
 
 import styles from "./page.module.css";
 
@@ -39,6 +40,7 @@ function shuffle(values: string[]) {
 
 function GuessTheSongContent() {
 	const { isReady, error: playbackError, playSnippet } = useSpotifyPlayback();
+	const pointsPerCorrectAnswer = 100;
 
 	const [tracks, setTracks] = useState<RoundTrack[]>([]);
 	const [answerTrackId, setAnswerTrackId] = useState<string | null>(null);
@@ -46,6 +48,11 @@ function GuessTheSongContent() {
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
+	const [roundNumber, setRoundNumber] = useState(1);
+	const [score, setScore] = useState(0);
+	const [streak, setStreak] = useState(0);
+	const [didSkipRound, setDidSkipRound] = useState(false);
 
 	const answerTrack = useMemo(
 		() => tracks.find((track) => track.id === answerTrackId) ?? null,
@@ -56,11 +63,13 @@ function GuessTheSongContent() {
 
 	const hasAnswered = selectedTrackId !== null;
 	const isCorrect = hasAnswered && selectedTrackId === answerTrackId;
+	const canContinueToResults = hasAnswered || didSkipRound;
 
 	async function loadRound() {
 		setIsLoadingRound(true);
 		setErrorMessage(null);
 		setSelectedTrackId(null);
+		setDidSkipRound(false);
 
 		try {
 			const response = await fetch("/api/games/guess-the-song/round?limit=4", {
@@ -124,74 +133,207 @@ function GuessTheSongContent() {
 		}
 
 		setSelectedTrackId(guessedTrack.id);
+
+		if (guessedTrack.id === answerTrackId) {
+			setScore((currentScore) => currentScore + pointsPerCorrectAnswer);
+			setStreak((currentStreak) => currentStreak + 1);
+		} else {
+			setStreak(0);
+		}
 	}
 
-	useEffect(() => {
+	function handleStartGame() {
+		setRoundNumber(1);
+		setScore(0);
+		setStreak(0);
+		setView("in-game");
 		void loadRound();
-	}, []);
+	}
+
+	function handleSkipRound() {
+		if (hasAnswered || isLoadingRound) {
+			return;
+		}
+
+		setStreak(0);
+		setDidSkipRound(true);
+		setView("results");
+	}
+
+	function handleGoToResults() {
+		if (!canContinueToResults) {
+			return;
+		}
+
+		setView("results");
+	}
+
+	function handleNextRound() {
+		setRoundNumber((currentRound) => currentRound + 1);
+		setView("in-game");
+		void loadRound();
+	}
+
+	function handleEndGame() {
+		setView("setup");
+		setRoundNumber(1);
+		setTracks([]);
+		setAnswerTrackId(null);
+		setSelectedTrackId(null);
+		setDidSkipRound(false);
+	}
 
 	return (
 		<div className={styles.page}>
+			<SiteHeader isLoggedIn={true} />
+
 			<main className={styles.main}>
-				<section className={styles.header}>
+				<section className={styles.pageHeader}>
 					<div className={styles.headerRow}>
 						<h1>Guess the Song</h1>
 						<Link href="/games" className={styles.backLink}>
 							← Back to Games
 						</Link>
 					</div>
-					<p>Listen to the short clip and pick the correct song title.</p>
+					<p>Set up your round, listen to the clip, and choose the correct song title.</p>
 				</section>
 
-				<section className={styles.controls}>
-					<button type="button" onClick={loadRound} disabled={isLoadingRound}>
-						{isLoadingRound ? "Loading Round..." : "New Round"}
-					</button>
-					<button
-						type="button"
-						onClick={handlePlaySnippet}
-						disabled={!isReady || !answerTrack || isPlaying || isLoadingRound}
-					>
-						{isPlaying ? "Playing..." : "Play Snippet"}
-					</button>
-				</section>
-
-				<p className={styles.status}>
-					{playbackError
-						? `Spotify: ${playbackError}`
-						: isReady
-							? "Spotify player is ready"
-							: "Preparing Spotify player..."}
-				</p>
-
-				{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
-
-				<section className={styles.options}>
-					{options.map((trackName) => {
-						const track = tracks.find((value) => value.name === trackName);
-						const trackId = track?.id ?? trackName;
-						const isSelected = selectedTrackId === trackId;
-
-						return (
-							<button
-								key={trackId}
-								type="button"
-								className={styles.option}
-								onClick={() => handleGuess(trackName)}
-								disabled={!answerTrack || hasAnswered}
-								data-selected={isSelected}
-							>
-								{trackName}
+				{view === "setup" ? (
+					<section className={styles.panel}>
+						<div className={styles.panelHeader}>
+							<h2>Game Setup</h2>
+							<p>Choose your mode (coming soon) and start the game when ready.</p>
+						</div>
+						<div className={styles.setupControls}>
+							<label className={styles.modeSelector} htmlFor="game-mode">
+								<span>Mode</span>
+								<select id="game-mode" disabled defaultValue="classic">
+									<option value="classic">Classic (Placeholder)</option>
+								</select>
+							</label>
+							<button type="button" onClick={handleStartGame} className={styles.primaryButton}>
+								Start Game
 							</button>
-						);
-					})}
-				</section>
+						</div>
+					</section>
+				) : null}
 
-				{hasAnswered && answerTrack ? (
-					<p className={styles.result}>
-						{isCorrect ? "Correct!" : "Not quite."} The answer is <strong>{answerTrack.name}</strong>{" "}
-						by {answerTrack.artists.join(", ")}.
-					</p>
+				{view === "in-game" ? (
+					<section className={styles.panel}>
+						<div className={styles.topBar}>
+							<div className={styles.statItem}>
+								<span>Round</span>
+								<strong>{roundNumber}</strong>
+							</div>
+							<div className={styles.statItem}>
+								<span>Timer</span>
+								<strong>--:--</strong>
+							</div>
+							<div className={styles.statItem}>
+								<span>Score</span>
+								<strong>{score}</strong>
+							</div>
+							<div className={styles.statItem}>
+								<span>Streak</span>
+								<strong>{streak}</strong>
+							</div>
+						</div>
+
+						<section className={styles.controls}>
+							<button type="button" onClick={loadRound} disabled={isLoadingRound}>
+								{isLoadingRound ? "Loading Round..." : "Refresh Round"}
+							</button>
+							<button
+								type="button"
+								onClick={handlePlaySnippet}
+								disabled={!isReady || !answerTrack || isPlaying || isLoadingRound}
+							>
+								{isPlaying ? "Playing..." : "Play Snippet"}
+							</button>
+							<button type="button" onClick={handleGoToResults} disabled={!canContinueToResults}>
+								View Results
+							</button>
+						</section>
+
+						<p className={styles.status}>
+							{playbackError
+								? `Spotify: ${playbackError}`
+								: isReady
+									? "Spotify player is ready"
+									: "Preparing Spotify player..."}
+						</p>
+
+						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+
+						<section className={styles.options}>
+							{options.map((trackName) => {
+								const track = tracks.find((value) => value.name === trackName);
+								const trackId = track?.id ?? trackName;
+								const isSelected = selectedTrackId === trackId;
+
+								return (
+									<button
+										key={trackId}
+										type="button"
+										className={styles.option}
+										onClick={() => handleGuess(trackName)}
+										disabled={!answerTrack || hasAnswered || didSkipRound}
+										data-selected={isSelected}
+									>
+										{trackName}
+									</button>
+								);
+							})}
+						</section>
+
+						<section className={styles.placeholders}>
+							<div className={styles.placeholderBox}>
+								<h3>Hints</h3>
+								<p>Hint options will be added here.</p>
+							</div>
+							<div className={styles.placeholderBox}>
+								<h3>Skip</h3>
+								<p>Use skip to move on without guessing.</p>
+								<button type="button" onClick={handleSkipRound} disabled={hasAnswered || didSkipRound}>
+									Skip Round
+								</button>
+							</div>
+						</section>
+					</section>
+				) : null}
+
+				{view === "results" ? (
+					<section className={styles.panel}>
+						<div className={styles.panelHeader}>
+							<h2>Round Results</h2>
+							<p>Review the correct answer, scoring details, and choose what to do next.</p>
+						</div>
+
+						<p className={styles.result}>
+							{answerTrack
+								? `Correct answer: ${answerTrack.name} by ${answerTrack.artists.join(", ")}.`
+								: "Answer unavailable for this round."}
+						</p>
+
+						<section className={styles.pointsBreakdown}>
+							<h3>Points Breakdown</h3>
+							<p>Detailed points and bonus calculations will be implemented here.</p>
+							<ul>
+								<li>Round base points: Placeholder</li>
+								<li>Time bonus: Placeholder</li>
+								<li>Streak bonus: Placeholder</li>
+							</ul>
+						</section>
+
+						<section className={styles.controls}>
+							<button type="button" onClick={handleNextRound}>
+								Next Round
+							</button>
+							<button type="button" onClick={handleEndGame}>
+								End Game
+							</button>
+						</section>
+					</section>
 				) : null}
 			</main>
 		</div>

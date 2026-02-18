@@ -1,45 +1,74 @@
 .page {
-	display: flex;
+	display: grid;
+	grid-template-rows: auto 1fr;
 	min-height: 100vh;
-	align-items: center;
-	justify-content: center;
+	--background: #fafafa;
+	--foreground: #fff;
+
+	--text-primary: #000;
+	--text-secondary: #666;
+
+	--button-primary-hover: #383838;
+	--button-secondary-hover: #f2f2f2;
+	--button-secondary-border: #ebebeb;
+
 	background-color: var(--background);
 	font-family: var(--font-geist-sans);
+	color: var(--text-primary);
+}
+
+.main {
+	width: min(1040px, 100%);
+	margin: 0 auto;
 }
 
 .main {
 	width: 100%;
-	max-width: 420px;
 	display: flex;
 	flex-direction: column;
 	gap: 24px;
-	padding: 32px;
-	border: 1px solid #e5e5e5;
-	border-radius: 16px;
-	background: #fff;
+	padding: 20px 24px 32px;
 }
 
-.main h1 {
+.pageHeader {
+	padding: 28px;
+	border: 1px solid var(--button-secondary-border);
+	border-radius: 20px;
+	background: var(--foreground);
+}
+
+.pageHeader h1 {
 	font-size: 28px;
+}
+
+.pageHeader p {
+	margin-top: 8px;
+	color: var(--text-secondary);
 }
 
 .form {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	padding: 28px;
+	border: 1px solid var(--button-secondary-border);
+	border-radius: 20px;
+	background: var(--foreground);
 }
 
 .form label {
 	font-size: 14px;
-	color: #666;
+	color: var(--text-secondary);
 }
 
 .form input {
 	height: 42px;
-	border: 1px solid #d9d9d9;
+	border: 1px solid var(--button-secondary-border);
 	border-radius: 10px;
 	padding: 0 12px;
 	margin-bottom: 6px;
+	background: transparent;
+	color: var(--text-primary);
 }
 
 .form button {
@@ -47,8 +76,8 @@
 	height: 42px;
 	border: 0;
 	border-radius: 10px;
-	background: #111;
-	color: #fff;
+	background: var(--text-primary);
+	color: var(--background);
 	font-weight: 600;
 	cursor: pointer;
 }
@@ -59,38 +88,51 @@
 }
 
 .error {
-	color: #c62828;
+	color: var(--text-primary);
 	font-size: 14px;
 }
 
 .meta {
+	padding: 0 28px;
 	font-size: 14px;
-	color: #666;
+	color: var(--text-secondary);
 }
 
 .meta a {
 	text-decoration: underline;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (hover: hover) and (pointer: fine) {
+	.form button:hover:not(:disabled) {
+		background: var(--button-primary-hover);
+	}
+}
+
+@media (max-width: 640px) {
 	.main {
-		border-color: #252525;
-		background: #111;
+		padding: 12px 16px 20px;
 	}
 
-	.form input {
-		border-color: #303030;
-		background: #0a0a0a;
-		color: #ededed;
+	.pageHeader,
+	.form {
+		padding: 20px;
 	}
 
-	.form label,
 	.meta {
-		color: #b3b3b3;
+		padding: 0 4px;
 	}
+}
 
-	.form button {
-		background: #ededed;
-		color: #111;
+@media (prefers-color-scheme: dark) {
+	.page {
+		--background: #000;
+		--foreground: #000;
+
+		--text-primary: #ededed;
+		--text-secondary: #999;
+
+		--button-primary-hover: #ccc;
+		--button-secondary-hover: #1a1a1a;
+		--button-secondary-border: #1a1a1a;
 	}
 }

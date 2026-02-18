@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { getServerSession } from "next-auth";
 
 import styles from "./page.module.css";
 import { authOptions } from "@/server/auth";
+import { GamePlayButton } from "@/components/game/game-play-button";
+import { SiteHeader } from "@/components/layout/site-header";
 
 const games = [
     {
@@ -18,32 +19,20 @@ export default async function GamesPage() {
 
     return (
         <div className={styles.page}>
+            <SiteHeader isLoggedIn={isLoggedIn} />
+
             <main className={styles.main}>
-                <section className={styles.header}>
+                <section className={styles.pageHeader}>
                     <h1>Games Library</h1>
                     <p>Pick a mini game and start playing.</p>
                 </section>
-
-                {!isLoggedIn ? (
-                    <section className={styles.notice}>
-                        <p>You need to log in to play games.</p>
-                        <Link href="/login?callbackUrl=/games" className={styles.linkButton}>
-                            Log in to continue
-                        </Link>
-                    </section>
-                ) : null}
 
                 <section className={styles.grid}>
                     {games.map((game) => (
                         <article key={game.href} className={styles.card}>
                             <h2>{game.title}</h2>
                             <p>{game.description}</p>
-                            <Link
-                                href={isLoggedIn ? game.href : "/login?callbackUrl=/games"}
-                                className={styles.linkButton}
-                            >
-                                Play
-                            </Link>
+                            <GamePlayButton href={game.href} isLoggedIn={isLoggedIn} />
                         </article>
                     ))}
                 </section>

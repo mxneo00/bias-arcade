@@ -1,34 +1,33 @@
 .page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-rows: auto 1fr;
     min-height: 100vh;
-    padding: 64px 32px;
-    gap: 32px;
+    gap: 0;
     font-family: var(--font-geist-sans);
     
-    --background: #fff;
-    --foreground: #000;
+    --background: #fafafa;
+    --foreground: #fff;
     
     --text-primary: #000;
     --text-secondary: #666;
     
-    --button-primary-hover: #eee;
-    --button-secondary-hover: #f5f5f5;
-    --button-secondary-border: #ccc;
+    --button-primary-hover: #383838;
+    --button-secondary-hover: #f2f2f2;
+    --button-secondary-border: #ebebeb;
     background-color: var(--background);
+    color: var(--text-primary);
 }
 
 .main {
-    width: 100%;
-    max-width: 680px;
+    width: min(1040px, 100%);
+    margin: 0 auto;
+}
+
+.main {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 32px;
-    border-radius: 16px;
-    border: 1px solid var(--button-secondary-border);
-    background: var(--background);
+    padding: 20px 24px 32px;
 }
 
 .backLink {
@@ -43,10 +42,28 @@
     transition: background 0.2s;
 }
 
-.header {
+.playButton {
+    width: fit-content;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border, #ccc);
+    padding: 0 16px;
+    background: transparent;
+    color: var(--text-primary, #000);
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.pageHeader {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding: 28px;
+    border-radius: 20px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--foreground);
 }
 
 .headerRow {
@@ -56,15 +73,111 @@
     gap: 12px;
 }
 
-.header h1 {
+.pageHeader h1 {
     font-size: 36px;
     line-height: 1.1;
     color: var(--text-primary);
 }
 
-.header p {
+.pageHeader p {
     font-size: 16px;
     color: var(--text-secondary);
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    border-radius: 20px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--foreground);
+}
+
+.panelHeader {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.panelHeader h2 {
+    font-size: 24px;
+    line-height: 1.2;
+    color: var(--text-primary);
+}
+
+.panelHeader p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.setupControls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.modeSelector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 240px;
+}
+
+.modeSelector span {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.modeSelector select {
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    color: var(--text-primary);
+    padding: 0 12px;
+}
+
+.modeSelector select:disabled {
+    opacity: 0.8;
+}
+
+.primaryButton {
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 0 16px;
+    cursor: pointer;
+    background: var(--background);
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.topBar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    padding: 10px 12px;
+}
+
+.statItem span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.statItem strong {
+    font-size: 18px;
+    color: var(--text-primary);
 }
 
 .controls {
@@ -116,6 +229,77 @@
     background: var(--button-secondary-hover);
 }
 
+.placeholders {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.placeholderBox {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 16px;
+    border: 1px dashed var(--button-secondary-border);
+    padding: 16px;
+}
+
+.placeholderBox h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.placeholderBox p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.placeholderBox button {
+    width: fit-content;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 0 14px;
+    cursor: pointer;
+    background: var(--background);
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.placeholderBox button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pointsBreakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 16px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    padding: 16px;
+}
+
+.pointsBreakdown h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.pointsBreakdown p,
+.pointsBreakdown li {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.pointsBreakdown ul {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
 .result {
     font-size: 16px;
     color: var(--text-primary);
@@ -126,22 +310,31 @@
         background: var(--button-secondary-hover);
     }
 
+    .primaryButton:hover {
+        background: var(--button-secondary-hover);
+    }
+
+    .playButton:hover {
+        background: var(--button-secondary-hover, #f5f5f5);
+    }
+
     .controls button:hover:not(:disabled),
-    .option:hover:not(:disabled) {
+    .option:hover:not(:disabled),
+    .placeholderBox button:hover:not(:disabled) {
         background: var(--button-secondary-hover);
     }
 }
 
 @media (max-width: 640px) {
-    .page {
-        padding: 24px 16px;
+    .main {
+        padding: 12px 16px 20px;
     }
 
-    .main {
+    .pageHeader {
         padding: 20px;
     }
 
-    .header h1 {
+    .pageHeader h1 {
         font-size: 28px;
     }
 
@@ -150,7 +343,19 @@
         align-items: flex-start;
     }
 
+    .panel {
+        padding: 20px;
+    }
+
+    .topBar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .options {
+        grid-template-columns: 1fr;
+    }
+
+    .placeholders {
         grid-template-columns: 1fr;
     }
 }
