@@ -1,7 +1,13 @@
 import styles from "./page.module.css";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 
-export default function Home() {
+import { authOptions } from "@/server/auth";
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const isLoggedIn = Boolean(session?.user);
+
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -17,12 +23,20 @@ export default function Home() {
           <Link href="/games" className={styles.primary}>
             Browse Games
           </Link>
-          <Link href="/login" className={styles.secondary}>
-            Log In
-          </Link>
-          <Link href="/signup" className={styles.secondary}>
-            Sign Up
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/profile" className={styles.secondary}>
+              Profile
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className={styles.secondary}>
+                Log In
+              </Link>
+              <Link href="/signup" className={styles.secondary}>
+                Sign Up
+              </Link>
+            </>
+          )}
         </section>
       </main>
     </div>

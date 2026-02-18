@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
 	const refreshToken = request.cookies.get("spotify_refresh_token")?.value;
 	const clientId = process.env.SPOTIFY_CLIENT_ID;
+	const isProduction = process.env.NODE_ENV === "production";
 
 	if (!refreshToken) {
 		return NextResponse.json({ error: "Missing refresh token" }, { status: 401 });
@@ -32,12 +33,21 @@ export async function POST(request: NextRequest) {
 		);
 	}
 
-	const response = NextResponse.json({ success: true });
+	if (!tokenData.access_token) {
+		return NextResponse.json({ error: "Missing access_token in Spotify response" }, { status: 502 });
+	}
+
+	const response = NextResponse.json({
+		access_token: tokenData.access_token,
+		expires_in: tokenData.expires_in,
+		token_type: tokenData.token_type,
+		scope: tokenData.scope,
+	});
 
 	if (tokenData.access_token) {
 		response.cookies.set("spotify_access_token", tokenData.access_token, {
 			httpOnly: true,
-			secure: true,
+			secure: isProduction,
 			sameSite: "lax",
 		});
 	}
@@ -45,7 +55,7 @@ export async function POST(request: NextRequest) {
 	if (tokenData.refresh_token) {
 		response.cookies.set("spotify_refresh_token", tokenData.refresh_token, {
 			httpOnly: true,
-			secure: true,
+			secure: isProduction,
 			sameSite: "lax",
 		});
 	}

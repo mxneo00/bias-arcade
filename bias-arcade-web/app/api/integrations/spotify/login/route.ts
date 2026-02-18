@@ -12,6 +12,7 @@ function sha256(buffer: Buffer) {
 export async function GET() {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI;
+  const isProduction = process.env.NODE_ENV === 'production';
   const scope = ['user-read-private', 'user-read-email'].join(' ');
   
   const codeVerifier = base64URLEncode(crypto.randomBytes(32));
@@ -30,8 +31,8 @@ export async function GET() {
 
   const response = NextResponse.redirect(authUrl.toString());
 
-  response.cookies.set('spotify_code_verifier', codeVerifier, { httpOnly: true, secure: true, sameSite: 'lax' });
-  response.cookies.set('spotify_auth_state', state, { httpOnly: true, secure: true, sameSite: 'lax' });
+  response.cookies.set('spotify_code_verifier', codeVerifier, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
+  response.cookies.set('spotify_auth_state', state, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
 
   return response;
 }

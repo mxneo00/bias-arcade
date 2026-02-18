@@ -1,0 +1,47 @@
+import { NextRequest } from "next/server";
+
+type SpotifyTokenResponse = {
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+    refresh_token: string;
+    scope: string;
+};
+
+function isAbsoluteUrl(url: string): boolean {
+    return url.startsWith("http://") || url.startsWith("https://");
+}
+
+export async function getSpotifyAccessToken(request: NextRequest): Promise<string> {
+    const baseUrl = request.nextUrl.origin;
+    const refreshUrl = `${baseUrl}/api/integrations/spotify/refresh`;
+    const response = await fetch(refreshUrl, {
+        method: "POST",
+        headers: {
+            cookie: request.headers.get("cookie") ?? "",
+        },
+        cache: "no-store",
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Failed to refresh Spotify token: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+    }
+    const data: Partial<SpotifyTokenResponse> = await response.json();
+    if (!data.access_token) {
+        throw new Error("Failed to refresh Spotify token: refresh response did not include access_token");
+    }
+    return data.access_token;
+}
+
+export async function spotifyFetch(request: NextRequest, url: string, init: RequestInit = {}): Promise<Response> {
+    const accessToken = await getSpotifyAccessToken(request);
+    const spotifyApiUrl = isAbsoluteUrl(url) ? url : `https://api.spotify.com/v1${url}`;
+    return fetch(spotifyApiUrl, {
+        ...init,
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            ...(init.headers || {}),
+        },
+    });
+}

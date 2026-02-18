@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse  } from "next/server";
 
 export async function GET(request: NextRequest) {
+    const isProduction = process.env.NODE_ENV === "production";
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
@@ -50,10 +51,10 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.set('spotify_access_token', tokenData.access_token, { httpOnly: true, secure: true, sameSite: 'lax' });
+    response.cookies.set('spotify_access_token', tokenData.access_token, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
 
     if (tokenData.refresh_token) {
-        response.cookies.set('spotify_refresh_token', tokenData.refresh_token, { httpOnly: true, secure: true, sameSite: 'lax' });
+        response.cookies.set('spotify_refresh_token', tokenData.refresh_token, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
     }
 
     response.cookies.delete('spotify_code_verifier');

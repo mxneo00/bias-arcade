@@ -50,7 +50,7 @@ export default function SignupPage() {
 		const loginResult = await signIn("credentials", {
 			email,
 			password,
-			callbackUrl: "/profile",
+			callbackUrl: "/",
 			redirect: false,
 		});
 
@@ -61,7 +61,7 @@ export default function SignupPage() {
 			return;
 		}
 
-		router.push(loginResult.url ?? "/profile");
+		router.push(loginResult.url ?? "/");
 		router.refresh();
 	}
 

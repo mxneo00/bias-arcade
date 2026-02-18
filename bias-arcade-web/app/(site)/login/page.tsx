@@ -12,13 +12,13 @@ export default function LoginPage() {
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [callbackUrl, setCallbackUrl] = useState("/profile");
+	const [callbackUrl, setCallbackUrl] = useState("/");
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
-		setCallbackUrl(params.get("callbackUrl") ?? "/profile");
+		setCallbackUrl(params.get("callbackUrl") ?? "/");
 	}, []);
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
