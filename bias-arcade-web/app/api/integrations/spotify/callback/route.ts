@@ -1,20 +1,36 @@
 import { NextRequest, NextResponse  } from "next/server";
 
+function toCanonicalDevUrl(url: URL): URL {
+    if (process.env.NODE_ENV !== 'development') {
+        return url;
+    }
+
+    url.protocol = 'http:';
+    url.hostname = '127.0.0.1';
+    url.port = '3000';
+
+    return url;
+}
+
 function getSpotifyRedirectUri(request: NextRequest) {
     const configuredUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
 
     if (configuredUri) {
-        return new URL(configuredUri).toString();
+        return toCanonicalDevUrl(new URL(configuredUri)).toString();
     }
 
     const forwardedProto = request.headers.get('x-forwarded-proto');
     const forwardedHost = request.headers.get('x-forwarded-host');
 
     if (forwardedProto && forwardedHost) {
-        return `${forwardedProto}://${forwardedHost}/api/integrations/spotify/callback`;
+        return toCanonicalDevUrl(new URL('/api/integrations/spotify/callback', `${forwardedProto}://${forwardedHost}`)).toString();
     }
 
-    return new URL('/api/integrations/spotify/callback', request.url).toString();
+    return toCanonicalDevUrl(new URL('/api/integrations/spotify/callback', request.url)).toString();
+}
+
+function buildHomeRedirect(request: NextRequest): URL {
+    return toCanonicalDevUrl(new URL('/', request.url));
 }
 
 export async function GET(request: NextRequest) {
@@ -75,11 +91,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to exchange code for token' }, { status: 400 });
     }
 
-    const response = NextResponse.redirect(new URL('/', request.url));
-    response.cookies.set('spotify_access_token', tokenData.access_token, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
+    const response = NextResponse.redirect(buildHomeRedirect(request), 302);
+    response.cookies.set('spotify_access_token', tokenData.access_token, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
 
     if (tokenData.refresh_token) {
-        response.cookies.set('spotify_refresh_token', tokenData.refresh_token, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
+        response.cookies.set('spotify_refresh_token', tokenData.refresh_token, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+    } else {
+        response.cookies.delete('spotify_refresh_token');
     }
 
     response.cookies.delete('spotify_code_verifier');

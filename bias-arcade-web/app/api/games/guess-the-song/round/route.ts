@@ -5,6 +5,10 @@ const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
 const DEFAULT_MARKET = "KR";
 const DEFAULT_LIMIT = 4;
 const MAX_LIMIT = 10;
+const ROUND_CACHE_TTL_MS = 5 * 60 * 1000;
+const ROUND_FETCH_POOL_LIMIT_MIN = 12;
+const ROUND_FETCH_POOL_LIMIT_MAX = 40;
+const SPOTIFY_LIMIT_RETRY_FALLBACK = 10;
 
 type SpotifyArtist = {
 	name: string;
@@ -35,6 +39,12 @@ type SpotifyRecommendationsResponse = {
 	tracks?: SpotifyTrack[];
 };
 
+type SpotifySearchResponse = {
+	tracks?: {
+		items?: SpotifyTrack[];
+	};
+};
+
 type RoundTrack = {
 	id: string;
 	name: string;
@@ -45,6 +55,13 @@ type RoundTrack = {
 	albumImageUrl: string | null;
 	externalUrl: string | null;
 };
+
+type RoundTrackCacheEntry = {
+	tracks: RoundTrack[];
+	updatedAt: number;
+};
+
+const roundTrackCache = new Map<string, RoundTrackCacheEntry>();
 
 function parseLimit(rawLimit: string | null): number {
 	const parsed = Number.parseInt(rawLimit ?? "", 10);
@@ -96,6 +113,51 @@ function normalizeTrack(track: SpotifyTrack): RoundTrack | null {
 	};
 }
 
+function createCacheKey(market: string, seedGenres: string[]): string {
+	return `${market}:${seedGenres.join(",")}`;
+}
+
+function dedupeTracks(tracks: RoundTrack[]): RoundTrack[] {
+	return Array.from(new Map(tracks.map((track) => [track.id, track])).values());
+}
+
+function shuffleTracks(tracks: RoundTrack[]): RoundTrack[] {
+	const values = [...tracks];
+
+	for (let index = values.length - 1; index > 0; index -= 1) {
+		const swapIndex = Math.floor(Math.random() * (index + 1));
+		[values[index], values[swapIndex]] = [values[swapIndex], values[index]];
+	}
+
+	return values;
+}
+
+function getRoundTracksFromCache(cacheKey: string, limit: number): RoundTrack[] | null {
+	const cached = roundTrackCache.get(cacheKey);
+
+	if (!cached) {
+		return null;
+	}
+
+	if (Date.now() - cached.updatedAt > ROUND_CACHE_TTL_MS) {
+		roundTrackCache.delete(cacheKey);
+		return null;
+	}
+
+	if (cached.tracks.length === 0) {
+		return null;
+	}
+
+	return shuffleTracks(cached.tracks).slice(0, limit);
+}
+
+function setRoundTrackCache(cacheKey: string, tracks: RoundTrack[]) {
+	roundTrackCache.set(cacheKey, {
+		tracks: dedupeTracks(tracks),
+		updatedAt: Date.now(),
+	});
+}
+
 async function fetchRecommendations(
 	request: NextRequest,
 	market: string,
@@ -114,40 +176,124 @@ async function fetchRecommendations(
 	});
 }
 
+async function fetchSearchFallback(
+	request: NextRequest,
+	market: string,
+	limit: number,
+	seedGenres: string[]
+): Promise<Response> {
+	const query = seedGenres.length > 0 ? seedGenres.join(" ") : "k-pop";
+	const searchParams = new URLSearchParams({
+		q: query,
+		type: "track",
+		market,
+		limit: String(limit),
+	});
+
+	return spotifyFetch(request, `/search?${searchParams.toString()}`, {
+		method: "GET",
+		cache: "no-store",
+	});
+}
+
+async function readResponseBody(response: Response): Promise<string> {
+	try {
+		return await response.text();
+	} catch {
+		return "";
+	}
+}
+
+function isInvalidLimitError(errorBody: string): boolean {
+	return errorBody.toLowerCase().includes("invalid limit");
+}
+
 export async function GET(request: NextRequest) {
 	const { searchParams } = new URL(request.url);
 	const limit = parseLimit(searchParams.get("limit"));
 	const market = parseMarket(searchParams.get("market"));
 	const requestedSeedGenres = parseSeedGenres(searchParams.get("seedGenres"));
+	const cacheKey = createCacheKey(market, requestedSeedGenres);
+	const cachedTracks = getRoundTracksFromCache(cacheKey, limit);
+
+	if (cachedTracks) {
+		return NextResponse.json({
+			tracks: cachedTracks,
+			market,
+			seedGenres: requestedSeedGenres,
+			source: "cache",
+		});
+	}
 
 	try {
-		let spotifyResponse = await fetchRecommendations(request, market, limit, requestedSeedGenres);
+		const fetchPoolLimit = Math.min(
+			Math.max(limit * 5, ROUND_FETCH_POOL_LIMIT_MIN),
+			ROUND_FETCH_POOL_LIMIT_MAX
+		);
+
+		let spotifyResponse = await fetchRecommendations(request, market, fetchPoolLimit, requestedSeedGenres);
 		let usedSeedGenres = requestedSeedGenres;
 
 		if (!spotifyResponse.ok && requestedSeedGenres.join(",") !== DEFAULT_SEED_GENRES.join(",")) {
-			spotifyResponse = await fetchRecommendations(request, market, limit, DEFAULT_SEED_GENRES);
+			spotifyResponse = await fetchRecommendations(request, market, fetchPoolLimit, DEFAULT_SEED_GENRES);
 			usedSeedGenres = DEFAULT_SEED_GENRES;
 		}
 
+		let tracks: RoundTrack[] = [];
+
 		if (!spotifyResponse.ok) {
-			const errorBody = await spotifyResponse.text();
-			return NextResponse.json(
-				{
-					error: "Failed to fetch Spotify recommendations",
-					details: errorBody,
-				},
-				{ status: spotifyResponse.status }
-			);
+			const recommendationErrorBody = await readResponseBody(spotifyResponse);
+
+			if (spotifyResponse.status === 400 && isInvalidLimitError(recommendationErrorBody)) {
+				spotifyResponse = await fetchRecommendations(request, market, SPOTIFY_LIMIT_RETRY_FALLBACK, usedSeedGenres);
+			}
 		}
 
-		const payload = (await spotifyResponse.json()) as SpotifyRecommendationsResponse;
-		const tracks = (payload.tracks ?? [])
-			.map(normalizeTrack)
-			.filter((track): track is RoundTrack => track !== null);
+		if (spotifyResponse.ok) {
+			const payload = (await spotifyResponse.json()) as SpotifyRecommendationsResponse;
+			tracks = (payload.tracks ?? [])
+				.map(normalizeTrack)
+				.filter((track): track is RoundTrack => track !== null);
+		} else {
+			const searchResponse = await fetchSearchFallback(request, market, fetchPoolLimit, usedSeedGenres);
+			let resolvedSearchResponse = searchResponse;
 
-		const uniqueTracks = Array.from(new Map(tracks.map((track) => [track.id, track])).values()).slice(0, limit);
+			if (!searchResponse.ok) {
+				const searchErrorBody = await readResponseBody(searchResponse);
 
-		if (uniqueTracks.length === 0) {
+				if (searchResponse.status === 400 && isInvalidLimitError(searchErrorBody)) {
+					resolvedSearchResponse = await fetchSearchFallback(request, market, SPOTIFY_LIMIT_RETRY_FALLBACK, usedSeedGenres);
+				}
+			}
+
+			if (!resolvedSearchResponse.ok) {
+				const recommendationsError = await readResponseBody(spotifyResponse);
+				const searchError = await readResponseBody(resolvedSearchResponse);
+
+				return NextResponse.json(
+					{
+						error: "Failed to fetch Spotify recommendations",
+						details: {
+							recommendations: recommendationsError,
+							searchFallback: searchError,
+						},
+					},
+					{ status: resolvedSearchResponse.status }
+				);
+			}
+
+			const searchPayload = (await resolvedSearchResponse.json()) as SpotifySearchResponse;
+			tracks = (searchPayload.tracks?.items ?? [])
+				.map(normalizeTrack)
+				.filter((track): track is RoundTrack => track !== null);
+		}
+
+		const uniqueTracks = dedupeTracks(tracks);
+		setRoundTrackCache(createCacheKey(market, usedSeedGenres), uniqueTracks);
+
+		const roundTracks = shuffleTracks(uniqueTracks).slice(0, limit);
+
+		if (roundTracks.length === 0) {
 			return NextResponse.json(
 				{ error: "No tracks available for this round" },
 				{ status: 404 }
@@ -155,12 +301,24 @@ export async function GET(request: NextRequest) {
 		}
 
 		return NextResponse.json({
-			tracks: uniqueTracks,
+			tracks: roundTracks,
 			market,
 			seedGenres: usedSeedGenres,
+			source: "spotify",
 		});
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unexpected error";
+
+		if (message === "Spotify re-authorization required") {
+			return NextResponse.json(
+				{
+					error: "Spotify connection expired. Please reconnect your Spotify account.",
+					code: "SPOTIFY_REAUTH_REQUIRED",
+				},
+				{ status: 401 }
+			);
+		}
+
 		return NextResponse.json({ error: message }, { status: 500 });
 	}
 }

@@ -6,25 +6,8 @@ import { getServerSession } from 'next-auth';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { SiteHeader } from '@/components/layout/site-header';
+import { getSpotifyConnectionStatus } from '@/lib/spotify/status';
 import { authOptions } from '@/server/auth';
-
-async function getSpotifyConnectionStatus() {
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('spotify_access_token')?.value;
-
-    if (!accessToken) {
-        return false;
-    }
-
-    const response = await fetch('https://api.spotify.com/v1/me', {
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
-        cache: 'no-store',
-    });
-
-    return response.ok;
-}
 
 
 export default async function Profile() {
@@ -37,7 +20,8 @@ export default async function Profile() {
     const displayName = session.user.name ?? 'Display name placeholder';
     const email = session.user.email ?? 'No email available';
     const avatarFallback = displayName.trim().charAt(0).toUpperCase() || 'U';
-    const isSpotifyConnected = await getSpotifyConnectionStatus();
+    const spotifyStatus = await getSpotifyConnectionStatus(await cookies());
+    const isSpotifyConnected = spotifyStatus.connected;
 
     return (
         <div className={styles.page}>
@@ -79,11 +63,11 @@ export default async function Profile() {
                                     <span className={styles.integrationStatus} aria-live="polite">
                                         Spotify Connected
                                     </span>
-                                    <Link href="/api/integrations/spotify/login">Reconnect Spotify</Link>
-                                    <Link href="/api/integrations/spotify/disconnect">Disconnect Spotify</Link>
+                                    <a href="/api/integrations/spotify/login">Reconnect Spotify</a>
+                                    <a href="/api/integrations/spotify/disconnect">Disconnect Spotify</a>
                                 </>
                             ) : (
-                                <Link href="/api/integrations/spotify/login">Connect Spotify</Link>
+                                <a href="/api/integrations/spotify/login">Connect Spotify</a>
                             )}
                             <SignOutButton className={styles.logoutButton} />
                             <Link href="/settings" className={styles.settingsButton}>

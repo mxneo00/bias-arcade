@@ -2,11 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
 	const refreshToken = request.cookies.get("spotify_refresh_token")?.value;
+	const accessToken = request.cookies.get("spotify_access_token")?.value;
 	const clientId = process.env.SPOTIFY_CLIENT_ID;
 	const isProduction = process.env.NODE_ENV === "production";
 
 	if (!refreshToken) {
-		return NextResponse.json({ error: "Missing refresh token" }, { status: 401 });
+		if (accessToken) {
+			return NextResponse.json({
+				access_token: accessToken,
+				token_type: "Bearer",
+				source: "access_token_cookie",
+			});
+		}
+
+		return NextResponse.json(
+			{
+				error: "Spotify connection expired. Please reconnect your Spotify account.",
+				code: "SPOTIFY_REAUTH_REQUIRED",
+			},
+			{ status: 401 }
+		);
 	}
 
 	if (!clientId) {
@@ -33,6 +48,19 @@ export async function POST(request: NextRequest) {
 			tokenData.error_description.toLowerCase().includes("revoked");
 
 		if (isRevokedRefreshToken) {
+			if (accessToken) {
+				const response = NextResponse.json({
+					access_token: accessToken,
+					token_type: "Bearer",
+					source: "access_token_cookie_fallback",
+					error: "Spotify refresh token is invalid. Please reconnect your Spotify account.",
+					code: "SPOTIFY_REAUTH_RECOMMENDED",
+				});
+
+				response.cookies.delete("spotify_refresh_token");
+				return response;
+			}
+
 			const response = NextResponse.json(
 				{
 					error: "Spotify connection expired. Please reconnect your Spotify account.",
@@ -69,6 +97,7 @@ export async function POST(request: NextRequest) {
 			httpOnly: true,
 			secure: isProduction,
 			sameSite: "lax",
+			path: "/",
 		});
 	}
 
@@ -77,6 +106,7 @@ export async function POST(request: NextRequest) {
 			httpOnly: true,
 			secure: isProduction,
 			sameSite: "lax",
+			path: "/",
 		});
 	}
 

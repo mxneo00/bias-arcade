@@ -48,6 +48,7 @@ function GuessTheSongContent() {
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [requiresSpotifyReconnect, setRequiresSpotifyReconnect] = useState(false);
 	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
 	const [roundNumber, setRoundNumber] = useState(1);
 	const [score, setScore] = useState(0);
@@ -68,6 +69,7 @@ function GuessTheSongContent() {
 	async function loadRound() {
 		setIsLoadingRound(true);
 		setErrorMessage(null);
+		setRequiresSpotifyReconnect(false);
 		setSelectedTrackId(null);
 		setDidSkipRound(false);
 
@@ -77,8 +79,23 @@ function GuessTheSongContent() {
 			});
 
 			if (!response.ok) {
-				const body = await response.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to load round");
+				const body = await response.json().catch(() => null) as {
+					error?: string;
+					details?: unknown;
+					code?: string;
+				} | null;
+
+				if (body?.code === "SPOTIFY_REAUTH_REQUIRED") {
+					setRequiresSpotifyReconnect(true);
+				}
+
+				const details = body?.details
+					? typeof body.details === "string"
+						? body.details
+						: JSON.stringify(body.details)
+					: null;
+
+				throw new Error(details ? `${body?.error ?? "Failed to load round"}: ${details}` : body?.error ?? "Failed to load round");
 			}
 
 			const data = (await response.json()) as RoundResponse;
@@ -92,6 +109,11 @@ function GuessTheSongContent() {
 			setAnswerTrackId(randomTrack.id);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to load round";
+
+			if (message === "Spotify re-authorization required") {
+				setRequiresSpotifyReconnect(true);
+			}
+
 			setErrorMessage(message);
 			setTracks([]);
 			setAnswerTrackId(null);
@@ -264,6 +286,12 @@ function GuessTheSongContent() {
 						</p>
 
 						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+
+						{requiresSpotifyReconnect ? (
+							<Link href="/api/integrations/spotify/login" className={styles.backLink}>
+								Reconnect Spotify
+							</Link>
+						) : null}
 
 						<section className={styles.options}>
 							{options.map((trackName) => {
