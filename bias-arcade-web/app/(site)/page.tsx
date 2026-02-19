@@ -1,66 +1,134 @@
-import Image from "next/image";
 import styles from "./page.module.css";
+import Link from "next/link";
+import { getServerSession } from "next-auth";
 
-export default function Home() {
+import { authOptions } from "@/server/auth";
+import { SiteHeader } from "@/components/layout/site-header";
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const isLoggedIn = Boolean(session?.user);
+  const lastPlayed = null as
+    | { title: string; modeLabel: string; href: string }
+    | null;
+
   return (
     <div className={styles.page}>
+      <SiteHeader isLoggedIn={isLoggedIn} />
+
       <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        {isLoggedIn ? (
+          <>
+            <section className={styles.dashboardPrimary}>
+              <p className={styles.eyebrow}>Dashboard</p>
+              <h1>Ready for your next round?</h1>
+              <p>
+                Jump back in instantly or continue from where you left off.
+              </p>
+              <div className={styles.ctas}>
+                <Link href="/games" className={styles.primary}>
+                  Play Now
+                </Link>
+                {lastPlayed ? (
+                  <Link href={lastPlayed.href} className={styles.secondary}>
+                    Continue: {lastPlayed.title} · {lastPlayed.modeLabel}
+                  </Link>
+                ) : (
+                  <Link href="/games" className={styles.secondary}>
+                    Continue Last Played (when available)
+                  </Link>
+                )}
+              </div>
+            </section>
+
+            <section className={styles.dashboardSecondary}>
+              <h2>What&apos;s next</h2>
+              <div className={styles.secondaryGrid}>
+                <article className={styles.miniCard}>
+                  <h3>Daily Challenge</h3>
+                  <p>Daily challenge functionality will be added soon.</p>
+                  <span className={styles.meta}>Coming soon</span>
+                </article>
+
+                <article className={styles.miniCard}>
+                  <h3>Last Session Summary</h3>
+                  <p>
+                    Your latest score, streak, and top result will appear here.
+                  </p>
+                  <span className={styles.meta}>No session data yet</span>
+                </article>
+
+                <article className={styles.miniCard}>
+                  <h3>Collections</h3>
+                  <p>
+                    See your latest unlock and visit your full collection page.
+                  </p>
+                  <Link href="/profile" className={styles.secondaryLink}>
+                    Go to Collections Placeholder
+                  </Link>
+                </article>
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <section className={styles.hero}>
+              <p className={styles.eyebrow}>K-pop mini game hub</p>
+              <h1>Play quick rounds built for your favorites.</h1>
+              <p>
+                Bias Arcade is a lightweight way to jump into short K-pop
+                challenges. Compete in minutes, discover songs you love, and
+                keep the fun going.
+              </p>
+              <div className={styles.ctas}>
+                <Link href="/login" className={styles.primary}>
+                  Log In to Play
+                </Link>
+                <Link href="/games" className={styles.secondary}>
+                  Browse Games
+                </Link>
+              </div>
+            </section>
+
+            <section className={styles.howItWorks}>
+              <h2>How it works</h2>
+              <ol className={styles.steps}>
+                <li>
+                  <h3>Choose a game</h3>
+                  <p>Pick a mode and jump in with one click.</p>
+                </li>
+                <li>
+                  <h3>Play quick rounds</h3>
+                  <p>Answer fast and keep your streak moving.</p>
+                </li>
+                <li>
+                  <h3>Track your progress</h3>
+                  <p>Sign in to keep your profile and come back anytime.</p>
+                </li>
+              </ol>
+            </section>
+
+            <section className={styles.preview}>
+              <h2>Preview</h2>
+              <ul className={styles.previewList}>
+                <li>Guess The Song rounds designed for quick sessions.</li>
+                <li>Spotify connection for personalized gameplay.</li>
+                <li>Simple profile hub for your game activity.</li>
+              </ul>
+            </section>
+          </>
+        )}
       </main>
+
+      <footer className={styles.footer}>
+        <p>© {new Date().getFullYear()} Bias Arcade</p>
+        <nav aria-label="Footer links" className={styles.footerLinks}>
+          <a href="#">About</a>
+          <a href="#">Support</a>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+        </nav>
+      </footer>
     </div>
   );
 }

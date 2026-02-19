@@ -1,0 +1,137 @@
+.page {
+	display: grid;
+	grid-template-rows: auto 1fr;
+	min-height: 100vh;
+	--background: #fafafa;
+	--foreground: #fff;
+
+	--text-primary: #000;
+	--text-secondary: #666;
+
+	--button-primary-hover: #383838;
+	--button-secondary-hover: #f2f2f2;
+	--button-secondary-border: #ebebeb;
+
+	background-color: var(--background);
+	font-family: var(--font-geist-sans);
+	color: var(--text-primary);
+}
+
+.main {
+	width: min(1040px, 100%);
+	margin: 0 auto;
+}
+
+.main {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	padding: 20px 24px 32px;
+}
+
+.pageHeader {
+	padding: 28px;
+	border: 1px solid var(--button-secondary-border);
+	border-radius: 20px;
+	background: var(--foreground);
+}
+
+.pageHeader h1 {
+	font-size: 28px;
+}
+
+.pageHeader p {
+	margin-top: 8px;
+	color: var(--text-secondary);
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 28px;
+	border: 1px solid var(--button-secondary-border);
+	border-radius: 20px;
+	background: var(--foreground);
+}
+
+.form label {
+	font-size: 14px;
+	color: var(--text-secondary);
+}
+
+.form input {
+	height: 42px;
+	border: 1px solid var(--button-secondary-border);
+	border-radius: 10px;
+	padding: 0 12px;
+	margin-bottom: 6px;
+	background: transparent;
+	color: var(--text-primary);
+}
+
+.form button {
+	margin-top: 8px;
+	height: 42px;
+	border: 0;
+	border-radius: 10px;
+	background: var(--text-primary);
+	color: var(--background);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.form button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.error {
+	color: var(--text-primary);
+	font-size: 14px;
+}
+
+.meta {
+	padding: 0 28px;
+	font-size: 14px;
+	color: var(--text-secondary);
+}
+
+.meta a {
+	text-decoration: underline;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.form button:hover:not(:disabled) {
+		background: var(--button-primary-hover);
+	}
+}
+
+@media (max-width: 640px) {
+	.main {
+		padding: 12px 16px 20px;
+	}
+
+	.pageHeader,
+	.form {
+		padding: 20px;
+	}
+
+	.meta {
+		padding: 0 4px;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.page {
+		--background: #000;
+		--foreground: #000;
+
+		--text-primary: #ededed;
+		--text-secondary: #999;
+
+		--button-primary-hover: #ccc;
+		--button-secondary-hover: #1a1a1a;
+		--button-secondary-border: #1a1a1a;
+	}
+}

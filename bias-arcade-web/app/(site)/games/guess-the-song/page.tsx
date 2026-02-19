@@ -1,9 +1,38 @@
-import styles from './page.module.scss';
+import Link from "next/link";
+import { getServerSession } from "next-auth";
 
-export default function GuessTheSong() {
-    return (
-        <div className={styles.page}>
-            <h1>Guess The Song</h1>
-        </div>
-    );
+import { authOptions } from "@/server/auth";
+import { SiteHeader } from "@/components/layout/site-header";
+
+import GuessTheSongClient from "../../../../src/components/game/guess-the-song-client";
+import styles from "./page.module.css";
+
+export default async function GuessTheSongPage() {
+	const session = await getServerSession(authOptions);
+
+	if (!session?.user) {
+		return (
+			<div className={styles.page}>
+				<SiteHeader isLoggedIn={false} />
+
+				<main className={styles.main}>
+					<section className={styles.pageHeader}>
+						<div className={styles.headerRow}>
+							<h1>Guess the Song</h1>
+							<Link href="/games" className={styles.backLink}>
+								← Back to Games
+							</Link>
+						</div>
+						<p>Please log in to play this game.</p>
+					</section>
+					<Link href="/login?callbackUrl=/games/guess-the-song" className={styles.backLink}>
+						Log in to continue
+					</Link>
+				</main>
+			</div>
+		);
+	}
+
+	return <GuessTheSongClient />;
 }
+
