@@ -12,6 +12,8 @@ function isAbsoluteUrl(url: string): boolean {
     return url.startsWith("http://") || url.startsWith("https://");
 }
 
+// Fetches a valid Spotify access token by calling the server-side refresh endpoint,
+// forwarding the caller's cookies so the endpoint can read the stored refresh token.
 export async function getSpotifyAccessToken(request: NextRequest): Promise<string> {
     const baseUrl = request.nextUrl.origin;
     const refreshUrl = `${baseUrl}/api/integrations/spotify/refresh`;
@@ -54,6 +56,8 @@ export async function getSpotifyAccessToken(request: NextRequest): Promise<strin
     return data.access_token;
 }
 
+// Convenience wrapper that attaches a fresh Bearer token to any Spotify API request.
+// Pass a relative path (e.g. "/me") or a full URL; both are handled.
 export async function spotifyFetch(request: NextRequest, url: string, init: RequestInit = {}): Promise<Response> {
     const accessToken = await getSpotifyAccessToken(request);
     const spotifyApiUrl = isAbsoluteUrl(url) ? url : `https://api.spotify.com/v1${url}`;

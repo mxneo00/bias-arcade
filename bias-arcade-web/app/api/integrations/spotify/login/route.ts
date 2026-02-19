@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
+// PKCE helpers — encode a buffer as URL-safe base64 with no padding.
 function base64URLEncode(str: Buffer) {
     return str.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -48,6 +49,7 @@ function shouldRedirectToCanonicalDevHost(request: NextRequest): boolean {
 }
 
 export async function GET(request: NextRequest) {
+  // Ensure the OAuth flow starts on the canonical dev host so cookies are consistent.
   if (shouldRedirectToCanonicalDevHost(request)) {
     const canonicalUrl = new URL(request.url);
     canonicalUrl.protocol = 'http:';
@@ -68,9 +70,11 @@ export async function GET(request: NextRequest) {
     'user-read-playback-state',
   ].join(' ');
   
+  // Generate a PKCE code verifier/challenge pair for the authorization request.
   const codeVerifier = base64URLEncode(crypto.randomBytes(32));
   const codeChallenge = base64URLEncode(sha256(Buffer.from(codeVerifier)));
 
+  // Random state value used to verify the callback comes from our redirect.
   const state = base64URLEncode(crypto.randomBytes(16));
 
   const authUrl = new URL('https://accounts.spotify.com/authorize');
@@ -84,6 +88,7 @@ export async function GET(request: NextRequest) {
 
   const response = NextResponse.redirect(authUrl.toString(), 302);
 
+  // Store the verifier and state in short-lived cookies so the callback can validate them.
   response.cookies.set('spotify_code_verifier', codeVerifier, {
     httpOnly: true,
     secure: isProduction,

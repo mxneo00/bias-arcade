@@ -5,9 +5,11 @@ const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
 const DEFAULT_MARKET = "KR";
 const DEFAULT_LIMIT = 4;
 const MAX_LIMIT = 10;
+// How long fetched track pools stay cached before being refreshed.
 const ROUND_CACHE_TTL_MS = 5 * 60 * 1000;
 const ROUND_FETCH_POOL_LIMIT_MIN = 12;
 const ROUND_FETCH_POOL_LIMIT_MAX = 40;
+// Fallback limit used when Spotify rejects the larger pool size.
 const SPOTIFY_LIMIT_RETRY_FALLBACK = 10;
 
 type SpotifyArtist = {
@@ -61,6 +63,8 @@ type RoundTrackCacheEntry = {
 	updatedAt: number;
 };
 
+// In-memory cache of track pools keyed by market + seed genres.
+// Avoids hitting the Spotify API on every round request.
 const roundTrackCache = new Map<string, RoundTrackCacheEntry>();
 
 function parseLimit(rawLimit: string | null): number {
@@ -96,6 +100,7 @@ function parseSeedGenres(rawSeedGenres: string | null): string[] {
 	return genres.length > 0 ? genres : DEFAULT_SEED_GENRES;
 }
 
+// Strip incomplete tracks so every round entry has the required fields.
 function normalizeTrack(track: SpotifyTrack): RoundTrack | null {
 	if (!track.id || !track.uri || !track.name || !track.artists?.length) {
 		return null;
@@ -216,6 +221,7 @@ export async function GET(request: NextRequest) {
 	const cacheKey = createCacheKey(market, requestedSeedGenres);
 	const cachedTracks = getRoundTracksFromCache(cacheKey, limit);
 
+	// Serve from cache when possible to avoid unnecessary Spotify API calls.
 	if (cachedTracks) {
 		return NextResponse.json({
 			tracks: cachedTracks,
@@ -226,6 +232,7 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
+		// Fetch a larger pool of tracks so we can shuffle and dedupe before returning the round subset.
 		const fetchPoolLimit = Math.min(
 			Math.max(limit * 5, ROUND_FETCH_POOL_LIMIT_MIN),
 			ROUND_FETCH_POOL_LIMIT_MAX
@@ -234,6 +241,7 @@ export async function GET(request: NextRequest) {
 		let spotifyResponse = await fetchRecommendations(request, market, fetchPoolLimit, requestedSeedGenres);
 		let usedSeedGenres = requestedSeedGenres;
 
+		// If the requested genres fail, retry with the default genres before giving up.
 		if (!spotifyResponse.ok && requestedSeedGenres.join(",") !== DEFAULT_SEED_GENRES.join(",")) {
 			spotifyResponse = await fetchRecommendations(request, market, fetchPoolLimit, DEFAULT_SEED_GENRES);
 			usedSeedGenres = DEFAULT_SEED_GENRES;

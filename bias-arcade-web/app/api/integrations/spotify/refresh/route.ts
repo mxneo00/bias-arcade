@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
 	const clientId = process.env.SPOTIFY_CLIENT_ID;
 	const isProduction = process.env.NODE_ENV === "production";
 
+	// If there's no refresh token, fall back to the existing access token cookie if present.
 	if (!refreshToken) {
 		if (accessToken) {
 			return NextResponse.json({
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({ error: "Missing SPOTIFY_CLIENT_ID" }, { status: 500 });
 	}
 
+	// Exchange the refresh token for a new access token via Spotify's token endpoint.
 	const body = new URLSearchParams();
 	body.append("grant_type", "refresh_token");
 	body.append("refresh_token", refreshToken);
@@ -42,6 +44,8 @@ export async function POST(request: NextRequest) {
 	const tokenData = await spotifyResponse.json();
 
 	if (!spotifyResponse.ok) {
+		// A revoked refresh token means the user needs to reconnect; try to keep them
+		// going with the existing access token if one is still available.
 		const isRevokedRefreshToken =
 			tokenData?.error === "invalid_grant" &&
 			typeof tokenData?.error_description === "string" &&
@@ -92,6 +96,7 @@ export async function POST(request: NextRequest) {
 		scope: tokenData.scope,
 	});
 
+	// Persist the new tokens in httpOnly cookies so future requests stay authenticated.
 	if (tokenData.access_token) {
 		response.cookies.set("spotify_access_token", tokenData.access_token, {
 			httpOnly: true,

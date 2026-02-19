@@ -27,6 +27,7 @@ function getRandomIndex(length: number) {
 	return Math.floor(Math.random() * length);
 }
 
+// Fisher-Yates shuffle — returns a new array with elements in random order.
 function shuffle(values: string[]) {
 	const array = [...values];
 
@@ -42,6 +43,7 @@ function GuessTheSongContent() {
 	const { isReady, error: playbackError, playSnippet } = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
+	// Core game state: tracks for the current round, which track is the answer, and what the player chose.
 	const [tracks, setTracks] = useState<RoundTrack[]>([]);
 	const [answerTrackId, setAnswerTrackId] = useState<string | null>(null);
 	const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -132,6 +134,7 @@ function GuessTheSongContent() {
 
 		try {
 			const snippetLength = 8000;
+			// Pick a random start position so the player can't memorise a fixed intro.
 			const maxStart = Math.max(0, answerTrack.durationMs - snippetLength);
 			const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
 

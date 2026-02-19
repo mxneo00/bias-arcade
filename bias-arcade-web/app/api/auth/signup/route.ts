@@ -27,12 +27,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // Prevent duplicate accounts for the same email address.
   const existingUser = await db.user.findUnique({ where: { email } });
 
   if (existingUser) {
     return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
   }
 
+  // Hash the password before storing — never persist plain-text passwords.
   const passwordHash = await hash(password, 12);
 
   const user = await db.user.create({

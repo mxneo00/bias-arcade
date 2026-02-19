@@ -7,9 +7,11 @@ import { db } from "@/server/db";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
+  // Fall back to a dev-only secret so the app starts without NEXTAUTH_SECRET set locally.
   secret:
     process.env.NEXTAUTH_SECRET ??
     (process.env.NODE_ENV === "development" ? "dev-fallback-auth-secret" : undefined),
+  // Use JWTs for sessions so we don't need a database session table.
   session: {
     strategy: "jwt",
   },
@@ -39,6 +41,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Compare the plain-text password against the stored bcrypt hash.
         const passwordMatches = await compare(password, user.passwordHash);
 
         if (!passwordMatches) {
@@ -56,6 +59,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     session({ session, token }) {
+      // Expose the user's database ID on the session so it's accessible client-side.
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }

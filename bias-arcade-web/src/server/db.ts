@@ -4,6 +4,8 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
+// Reuse a single PrismaClient instance across hot-reloads in development to
+// avoid exhausting the database connection pool.
 export const db =
   global.prisma ??
   new PrismaClient({

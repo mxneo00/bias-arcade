@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
         );
     }
 
+    // Validate that the state parameter matches what we set during the login step.
     if (state !== storedState) {
         console.error('State mismatch in Spotify callback');
         return NextResponse.json({ error: 'State mismatch in Spotify callback' }, { status: 400 });
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest) {
     const clientId = process.env.SPOTIFY_CLIENT_ID!;
     const redirectUri = getSpotifyRedirectUri(request);
 
+    // Exchange the authorization code for access and refresh tokens using PKCE.
     const body = new URLSearchParams();
     body.append('client_id', clientId);
     body.append('grant_type', 'authorization_code');
@@ -91,6 +93,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to exchange code for token' }, { status: 400 });
     }
 
+    // Store tokens in httpOnly cookies and clean up the one-time PKCE cookies.
     const response = NextResponse.redirect(buildHomeRedirect(request), 302);
     response.cookies.set('spotify_access_token', tokenData.access_token, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
 

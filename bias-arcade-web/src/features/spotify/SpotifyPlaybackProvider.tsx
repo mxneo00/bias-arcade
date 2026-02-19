@@ -51,6 +51,7 @@ function getErrorMessage(error: unknown): string {
     return 'Unknown error';
 }
 
+// Injects the Spotify Web Playback SDK script and waits for it to be ready.
 async function loadSpotifySDK() {
     if (window.Spotify) {
         return;
@@ -81,6 +82,7 @@ async function loadSpotifySDK() {
     });
 }
 
+// Fetches a fresh access token from the server-side refresh endpoint.
 async function getAccessToken(): Promise<string> {
     const response = await fetch('/api/integrations/spotify/refresh', {
         method: 'POST',
@@ -107,6 +109,7 @@ async function getAccessToken(): Promise<string> {
     return token;
 }
 
+// Transfers Spotify playback to the SDK device so we can control it via the API.
 async function transferPlaybackToDevice(deviceId: string, accessToken: string) {
     await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
@@ -127,6 +130,7 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
     const [error, setError] = useState<string | null>(null);
 
     const playerRef = useRef<SpotifyPlayerInstance | null>(null);
+    // Store the token in a ref so the SDK's getOAuthToken callback always reads the latest value.
     const tokenRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -188,6 +192,7 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
         initializePlayer();
     }, []);
 
+    // Plays a short snippet of a track starting at startMs and pauses after lengthMs.
     const playSnippet = async (trackURI: string, startMs: number, lengthMs: number) => {
         if (!deviceId) {
             throw new Error('Spotify player is not ready');
