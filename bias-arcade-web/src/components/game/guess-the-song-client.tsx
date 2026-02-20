@@ -8,6 +8,7 @@ import {
 	useSpotifyPlayback,
 } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
+import { VolumeControl } from "@/components/game/volume-slider";
 
 import styles from "./page.module.css";
 
@@ -30,7 +31,7 @@ type CreateGameResponse = {
 };
 
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, playSnippet } = useSpotifyPlayback();
+	const { isReady, error: playbackError, player, playSnippet } = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -170,6 +171,8 @@ function GuessTheSongContent() {
 		} else {
 			setStreak(0);
 		}
+
+		setView("results");
 	}
 
 	async function handleStartGame() {
@@ -310,6 +313,8 @@ function GuessTheSongContent() {
 									? "Spotify player is ready"
 									: "Preparing Spotify player..."}
 						</p>
+
+						<VolumeControl player={player} />
 
 						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
