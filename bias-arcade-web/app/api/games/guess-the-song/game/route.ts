@@ -4,6 +4,20 @@ import { createSession, deleteSession } from "@/lib/games/guess-the-song/session
 const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
 const DEFAULT_MARKET = "KR";
 
+function sanitizeSeedGenres(seedGenres: string[] | undefined): string[] {
+    const allowed = new Set(DEFAULT_SEED_GENRES);
+
+    const normalized = Array.from(
+        new Set(
+            (seedGenres ?? [])
+                .map((genre) => genre.trim().toLowerCase())
+                .filter((genre) => allowed.has(genre))
+        )
+    );
+
+    return normalized.length > 0 ? normalized : DEFAULT_SEED_GENRES;
+}
+
 export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as Partial<{
         market: string;
@@ -12,7 +26,7 @@ export async function POST(request: NextRequest) {
   }>;
 
   const market = (body.market ?? DEFAULT_MARKET).toUpperCase();
-  const seedGenres = body.seedGenres?.length ? body.seedGenres : DEFAULT_SEED_GENRES;
+    const seedGenres = sanitizeSeedGenres(body.seedGenres);
   const optionsCount = Math.min(Math.max(body.optionsCount ?? 4, 2), 10);
 
   const session = await createSession({market, seedGenres, optionsCount});
