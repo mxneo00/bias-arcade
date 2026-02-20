@@ -6,6 +6,7 @@ type SpotifyPlaybackContextType = {
     isReady: boolean;
     deviceId: string | null;
     error: string | null;
+    player: SpotifyPlayerInstance | null;
     playSnippet: (trackURI: string, startMs: number, lengthMs: number) => Promise<void>;
 };
 
@@ -29,6 +30,7 @@ type SpotifyPlayerInstance = {
         callback: (event: { device_id: string } | SpotifyErrorEvent) => void,
     ) => void;
     connect: () => Promise<boolean>;
+    setVolume: (volume: number) => Promise<void>;
 };
 
 type SpotifySDK = {
@@ -220,7 +222,9 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
     };
 
     return (
-        <SpotifyPlaybackContext.Provider value={{ isReady, deviceId, error, playSnippet }}>
+        <SpotifyPlaybackContext.Provider
+            value={{ isReady, deviceId, error, player: playerRef.current, playSnippet }}
+        >
             {children}
         </SpotifyPlaybackContext.Provider>
     );
