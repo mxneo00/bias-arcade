@@ -6,7 +6,7 @@ import { defineConfig } from "prisma/config";
 const configuredUrl = process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"];
 const datasourceUrl = configuredUrl?.startsWith("file:")
   ? configuredUrl
-  : "file:./dev.db";
+  : "file:./prisma/dev.db";
 
 process.env["DATABASE_URL"] = datasourceUrl;
 
