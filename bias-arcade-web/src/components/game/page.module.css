@@ -160,6 +160,10 @@
     gap: 12px;
 }
 
+.twoColumnTopBar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .statItem {
     display: flex;
     flex-direction: column;
@@ -227,6 +231,140 @@
 
 .option[data-selected="true"] {
     background: var(--button-secondary-hover);
+}
+
+.songOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.snippetControls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.snippetButton {
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 0 16px;
+    cursor: pointer;
+    background: var(--background);
+    color: var(--text-primary);
+    transition: background 0.2s;
+}
+
+.snippetButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.songPair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.songOption {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-radius: 16px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    padding: 16px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    min-width: 0;
+}
+
+.selected {
+    border-color: var(--text-primary);
+    background: var(--button-secondary-hover);
+}
+
+.albumArt {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    object-fit: cover;
+    background: var(--button-secondary-hover);
+}
+
+.songInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.songName {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.artistName {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.resultsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.resultsSongs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.resultSong {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 16px;
+    border: 1px solid var(--button-secondary-border);
+    background: var(--background);
+    padding: 12px;
+}
+
+.resultSong .albumArt {
+    width: 84px;
+    height: 84px;
+    flex: 0 0 84px;
+}
+
+.resultLabel {
+    width: fit-content;
+    margin-top: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 4px 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.resultsControls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.secondaryButton {
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--button-secondary-border);
+    padding: 0 16px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-primary);
+    transition: background 0.2s;
 }
 
 .placeholders {
@@ -320,7 +458,10 @@
 
     .controls button:hover:not(:disabled),
     .option:hover:not(:disabled),
-    .placeholderBox button:hover:not(:disabled) {
+    .placeholderBox button:hover:not(:disabled),
+    .songOption:hover,
+    .snippetButton:hover:not(:disabled),
+    .secondaryButton:hover {
         background: var(--button-secondary-hover);
     }
 }
@@ -349,6 +490,19 @@
 
     .topBar {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .songPair,
+    .resultsSongs {
+        grid-template-columns: 1fr;
+    }
+
+    .snippetControls {
+        grid-template-columns: 1fr;
+    }
+
+    .resultSong {
+        align-items: flex-start;
     }
 
     .options {
