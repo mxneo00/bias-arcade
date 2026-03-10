@@ -137,7 +137,7 @@ function SaveOneDropOneSongContent() {
         }
     }
 
-    async function handlePlaySnippet() {
+    async function handlePlaySnippet(track: SongA | SongB) {
         if (!isReady || !player) {
             setErrorMessage("Spotify playback not ready. Please connect your Spotify account.");
             return;
@@ -145,22 +145,17 @@ function SaveOneDropOneSongContent() {
         setErrorMessage(null);
         setIsPlaying(true);
 
-        for (const track of [currentPair?.songA, currentPair?.songB]) {
-            if (track) {
-                try {
-                    const snippetLength = 30 * 1000; // 30 seconds
-                    const maxStart = Math.max(0, track.duration_ms - snippetLength);
-                    const startMs = Math.floor(Math.random() * maxStart);
-                    await playSnippet(track.uri, startMs, snippetLength);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : "Failed to play snippet";
-                    setErrorMessage(message);
-                    break;
-                }
-            }
+        try {
+            const snippetLength = 30 * 1000; // 30 seconds
+            const maxStart = Math.max(0, track.duration_ms - snippetLength);
+            const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
+            await playSnippet(track.uri, startMs, snippetLength);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to play snippet";
+            setErrorMessage(message);
+        } finally {
+            setIsPlaying(false);
         }
-        setIsPlaying(false);
-
     }
 
     function handleSelectTrack(trackId: string) {
@@ -254,14 +249,14 @@ function SaveOneDropOneSongContent() {
 
                 {view === "in-game" ? (
                     <section className={styles.panel}>
-                        <div className={styles.topBar}>
+                        <div className={`${styles.topBar} ${styles.twoColumnTopBar}`}>
                             <div className={styles.statItem}>
                                 <span>Round</span>
-                                <span>{roundNumber}</span>
+                                <strong>{roundNumber}</strong>
                             </div>
                             <div className={styles.statItem}>
                                 <span>Score</span>
-                                <span>{score}</span>
+                                <strong>{score}</strong>
                             </div>
                         </div>
 
@@ -273,19 +268,12 @@ function SaveOneDropOneSongContent() {
                             >
                                 {isLoadingRound ? "Loading Round..." : "Refresh Round"}
                             </button>
-                            <button 
-                                type="button" 
-                                onClick={handlePlaySnippet}
-                                disabled={!isReady || !currentPair || isPlaying || isLoadingRound}
-                            >
-                                {isPlaying ? "Playing..." : "Play Snippet"}
-                            </button>
                             <button
                                 type="button"
                                 onClick={handleGoToResults}
                                 disabled={!canContinue}
                             >
-
+                                View Results
                             </button>
                         </section>
 
@@ -309,28 +297,53 @@ function SaveOneDropOneSongContent() {
 
                         <section className={styles.songOptions}>
                             {currentPair ? (
-                                <section className={styles.songPair}>
-                                    <div
-                                        className={`${styles.songOption} ${selectedTrackId === currentPair.songA.id ? styles.selected : ""}`}
-                                        onClick={() => handleSelectTrack(currentPair.songA.id)}
-                                    >
-                                        <img src={currentPair.songA.albumImageUrl ?? ""} alt={`${currentPair.songA.name} album art`} className={styles.albumArt} />
-                                        <div className={styles.songInfo}>
-                                            <span className={styles.songName}>{currentPair.songA.name}</span>
-                                            <span className={styles.artistName}>{currentPair.songA.artists.join(", ")}</span>
+                                <>
+                                    <section className={styles.snippetControls}>
+                                        <button
+                                            type="button"
+                                            className={styles.snippetButton}
+                                            onClick={() => {
+                                                void handlePlaySnippet(currentPair.songA);
+                                            }}
+                                            disabled={!isReady || isPlaying || isLoadingRound}
+                                        >
+                                            {isPlaying ? "Playing..." : "Play Left Song"}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={styles.snippetButton}
+                                            onClick={() => {
+                                                void handlePlaySnippet(currentPair.songB);
+                                            }}
+                                            disabled={!isReady || isPlaying || isLoadingRound}
+                                        >
+                                            {isPlaying ? "Playing..." : "Play Right Song"}
+                                        </button>
+                                    </section>
+
+                                    <section className={styles.songPair}>
+                                        <div
+                                            className={`${styles.songOption} ${selectedTrackId === currentPair.songA.id ? styles.selected : ""}`}
+                                            onClick={() => handleSelectTrack(currentPair.songA.id)}
+                                        >
+                                            <img src={currentPair.songA.albumImageUrl ?? ""} alt={`${currentPair.songA.name} album art`} className={styles.albumArt} />
+                                            <div className={styles.songInfo}>
+                                                <span className={styles.songName}>{currentPair.songA.name}</span>
+                                                <span className={styles.artistName}>{currentPair.songA.artists.join(", ")}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div
-                                        className={`${styles.songOption} ${selectedTrackId === currentPair.songB.id ? styles.selected : ""}`}
-                                        onClick={() => handleSelectTrack(currentPair.songB.id)}
-                                    >
-                                        <img src={currentPair.songB.albumImageUrl ?? ""} alt={`${currentPair.songB.name} album art`} className={styles.albumArt} />
-                                        <div className={styles.songInfo}>
-                                            <span className={styles.songName}>{currentPair.songB.name}</span>
-                                            <span className={styles.artistName}>{currentPair.songB.artists.join(", ")}</span>
+                                        <div
+                                            className={`${styles.songOption} ${selectedTrackId === currentPair.songB.id ? styles.selected : ""}`}
+                                            onClick={() => handleSelectTrack(currentPair.songB.id)}
+                                        >
+                                            <img src={currentPair.songB.albumImageUrl ?? ""} alt={`${currentPair.songB.name} album art`} className={styles.albumArt} />
+                                            <div className={styles.songInfo}>
+                                                <span className={styles.songName}>{currentPair.songB.name}</span>
+                                                <span className={styles.artistName}>{currentPair.songB.artists.join(", ")}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </section>
+                                    </section>
+                                </>
                             ) : null}
                         </section>
                     </section>
