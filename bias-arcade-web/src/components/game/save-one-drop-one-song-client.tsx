@@ -16,10 +16,7 @@ type SongA = {
     id: string;
     name: string;
     artists: string[];
-    album: {
-        name: string;
-        images: { url: string }[];
-    };
+    albumImageUrl: string | null;
     uri: string;
     duration_ms: number;
 }
@@ -28,19 +25,15 @@ type SongB = {
     id: string;
     name: string;
     artists: string[];
-    album: {
-        name: string;
-        images: { url: string }[];
-    };
+    albumImageUrl: string | null;
     uri: string;
     duration_ms: number;
 }
 
 type RoundResponse = {
+    roundNumber: number;
     songA: SongA;
     songB: SongB;
-    isGameOver: boolean;
-    score: number;
 };
 
 type CreateGameResponse = {
@@ -54,7 +47,6 @@ function SaveOneDropOneSongContent() {
     const [gameId, setGameId] = useState<string | null>(null);
 
     const [currentPair, setCurrentPair] = useState<{ songA: SongA; songB: SongB } | null>(null);
-    const [isLoadingPair, setIsLoadingPair] = useState(false);
     const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
     const [isLoadingRound, setIsLoadingRound] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -68,7 +60,7 @@ function SaveOneDropOneSongContent() {
     const canContinue = hasAnswered && !isLoadingRound;
 
     async function createGameSession() {
-        const response = await fetch("/api/games/save-one-drop-one-song/create", {
+        const response = await fetch("/api/games/save-one-drop-one-song/game", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({}),
@@ -99,10 +91,10 @@ function SaveOneDropOneSongContent() {
 		}
 
         try {
-            const response = await fetch(`/api/games/save-one-drop-one-song/${resolvedGameId}/next`, {
+            const response = await fetch("/api/games/save-one-drop-one-song/round", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ gameId: resolvedGameId }),
                 cache: "no-store",
             });
 
@@ -129,8 +121,7 @@ function SaveOneDropOneSongContent() {
             const data = (await response.json()) as RoundResponse;
             setCurrentPair({ songA: data.songA, songB: data.songB });
             setView("in-game");
-            setRoundNumber((prev) => prev + 1);
-            setScore(data.score);
+            setRoundNumber(data.roundNumber);
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to load round";
 
@@ -146,7 +137,7 @@ function SaveOneDropOneSongContent() {
         }
     }
 
-    async function handlePlaySnippet(trackId: string) {
+    async function handlePlaySnippet() {
         if (!isReady || !player) {
             setErrorMessage("Spotify playback not ready. Please connect your Spotify account.");
             return;
@@ -154,19 +145,22 @@ function SaveOneDropOneSongContent() {
         setErrorMessage(null);
         setIsPlaying(true);
 
-        try {
-            const snippetLength = 30; // seconds
-            const maxStart = Math.max(0, (currentPair?.songA.duration_ms ?? 0) - snippetLength * 1000);
-            const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
-
-            await playSnippet(trackId, startMs, snippetLength * 1000);
-        } catch (error) {
-            const message = error instanceof Error ? error.message : "Failed to play snippet";
-            setErrorMessage(message);
-        } finally {
-            setIsPlaying(false);
-
+        for (const track of [currentPair?.songA, currentPair?.songB]) {
+            if (track) {
+                try {
+                    const snippetLength = 30 * 1000; // 30 seconds
+                    const maxStart = Math.max(0, track.duration_ms - snippetLength);
+                    const startMs = Math.floor(Math.random() * maxStart);
+                    await playSnippet(track.uri, startMs, snippetLength);
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : "Failed to play snippet";
+                    setErrorMessage(message);
+                    break;
+                }
+            }
         }
+        setIsPlaying(false);
+
     }
 
     function handleSelectTrack(trackId: string) {
@@ -211,10 +205,8 @@ function SaveOneDropOneSongContent() {
 
     function handleEndGame() {
         if (gameId) {
-            void fetch(`/api/games/save-one-drop-one-song/${gameId}/end`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
+            void fetch(`/api/games/save-one-drop-one-song/game?gameId=${encodeURIComponent(gameId)}`, {
+                method: "DELETE",
                 cache: "no-store",
             });
         }
@@ -322,7 +314,7 @@ function SaveOneDropOneSongContent() {
                                         className={`${styles.songOption} ${selectedTrackId === currentPair.songA.id ? styles.selected : ""}`}
                                         onClick={() => handleSelectTrack(currentPair.songA.id)}
                                     >
-                                        <img src={currentPair.songA.album.images[0]?.url} alt={`${currentPair.songA.name} album art`} className={styles.albumArt} />
+                                        <img src={currentPair.songA.albumImageUrl ?? ""} alt={`${currentPair.songA.name} album art`} className={styles.albumArt} />
                                         <div className={styles.songInfo}>
                                             <span className={styles.songName}>{currentPair.songA.name}</span>
                                             <span className={styles.artistName}>{currentPair.songA.artists.join(", ")}</span>
@@ -332,7 +324,7 @@ function SaveOneDropOneSongContent() {
                                         className={`${styles.songOption} ${selectedTrackId === currentPair.songB.id ? styles.selected : ""}`}
                                         onClick={() => handleSelectTrack(currentPair.songB.id)}
                                     >
-                                        <img src={currentPair.songB.album.images[0]?.url} alt={`${currentPair.songB.name} album art`} className={styles.albumArt} />
+                                        <img src={currentPair.songB.albumImageUrl ?? ""} alt={`${currentPair.songB.name} album art`} className={styles.albumArt} />
                                         <div className={styles.songInfo}>
                                             <span className={styles.songName}>{currentPair.songB.name}</span>
                                             <span className={styles.artistName}>{currentPair.songB.artists.join(", ")}</span>
@@ -351,7 +343,7 @@ function SaveOneDropOneSongContent() {
                         </div>
                         <section className={styles.resultsSongs}>
                             <div className={styles.resultSong}>
-                                <img src={currentPair?.songA.album.images[0]?.url} alt={`${currentPair?.songA.name} album art`} className={styles.albumArt} />
+                                <img src={currentPair?.songA.albumImageUrl ?? ""} alt={`${currentPair?.songA.name} album art`} className={styles.albumArt} />
                                 <div className={styles.songInfo}>
                                     <span className={styles.songName}>{currentPair?.songA.name}</span>
                                     <span className={styles.artistName}>{currentPair?.songA.artists.join(", ")}</span>
@@ -359,7 +351,7 @@ function SaveOneDropOneSongContent() {
                                 </div>
                             </div>
                             <div className={styles.resultSong}>
-                                <img src={currentPair?.songB.album.images[0]?.url} alt={`${currentPair?.songB.name} album art`} className={styles.albumArt} />
+                                <img src={currentPair?.songB.albumImageUrl ?? ""} alt={`${currentPair?.songB.name} album art`} className={styles.albumArt} />
                                 <div className={styles.songInfo}>
                                     <span className={styles.songName}>{currentPair?.songB.name}</span>
                                     <span className={styles.artistName}>{currentPair?.songB.artists.join(", ")}</span>

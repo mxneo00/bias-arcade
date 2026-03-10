@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }>;
 
   const market = (body.market ?? DEFAULT_MARKET).toUpperCase();
-    const seedGenres = sanitizeSeedGenres(body.seedGenres);
+  const seedGenres = sanitizeSeedGenres(body.seedGenres);
   const optionsCount = Math.min(Math.max(body.optionsCount ?? 4, 2), 10);
 
   const session = await createSession({market, seedGenres, optionsCount});

@@ -6,11 +6,11 @@ type GameSession = {
     variant: string;
     createdAt: number;
     updatedAt: number;
-    songAPool: SongA[];
-    songBPool: SongB[];
+    pool: (SongA | SongB)[];
     usedSongAIds: Set<string>;
     usedSongBIds: Set<string>;
     roundNumber: number;
+    usedOptions: Set<string>;
 }
 
 const GAME_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -42,11 +42,11 @@ export function createSession(settings: GameSettings): GameSession {
         variant: "default",
         createdAt: now,
         updatedAt: now,
-        songAPool: [],
-        songBPool: [],
+        pool: [],
         usedSongAIds: new Set(),
         usedSongBIds: new Set(),
         roundNumber: 0,
+        usedOptions: new Set(),
     };
     sessions.set(id, session);
     return session;
