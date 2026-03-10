@@ -291,7 +291,11 @@ function GuessTheSongContent() {
 						</div>
 
 						<section className={styles.controls}>
-							<button type="button" onClick={() => loadRound()} disabled={isLoadingRound}>
+							<button 
+								type="button" 
+								onClick={() => loadRound()} 
+								disabled={isLoadingRound}
+							>
 								{isLoadingRound ? "Loading Round..." : "Refresh Round"}
 							</button>
 							<button
@@ -301,7 +305,11 @@ function GuessTheSongContent() {
 							>
 								{isPlaying ? "Playing..." : "Play Snippet"}
 							</button>
-							<button type="button" onClick={handleGoToResults} disabled={!canContinueToResults}>
+							<button 
+								type="button" 
+								onClick={handleGoToResults} 
+								disabled={!canContinueToResults}
+							>
 								View Results
 							</button>
 						</section>
