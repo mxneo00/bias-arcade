@@ -8,6 +8,7 @@ type SpotifyPlaybackContextType = {
     error: string | null;
     player: SpotifyPlayerInstance | null;
     playSnippet: (trackURI: string, startMs: number, lengthMs: number) => Promise<void>;
+    resetPlayer: () => Promise<void>;
 };
 
 type SpotifyErrorEvent = {
@@ -30,6 +31,8 @@ type SpotifyPlayerInstance = {
         callback: (event: { device_id: string } | SpotifyErrorEvent) => void,
     ) => void;
     connect: () => Promise<boolean>;
+    pause: () => Promise<void>;
+    disconnect: () => Promise<void>;
     setVolume: (volume: number) => Promise<void>;
 };
 
@@ -131,63 +134,72 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
     const playerRef = useRef<SpotifyPlayerInstance | null>(null);
     const tokenRef = useRef<string | null>(null);
 
-    useEffect(() => {
-        async function initializePlayer() {
-            try {
-                await loadSpotifySDK();
-                const token = await getAccessToken();
-                tokenRef.current = token;
-                if (!window.Spotify) {
-                    throw new Error('Spotify SDK failed to load');
-                }
-                playerRef.current = new window.Spotify.Player({
-                    name: 'Bias Arcade Player',
-                    getOAuthToken: (cb: (token: string) => void) => {
-                        cb(tokenRef.current!);
-                    },
-                });
-                playerRef.current.addListener('ready', (event) => {
-                    if (!('device_id' in event)) {
-                        return;
-                    }
-                    const { device_id } = event;
-                    setDeviceId(device_id);
-                    setIsReady(true);
-                });
-                playerRef.current.addListener('initialization_error', (event) => {
-                    if (!('message' in event)) {
-                        return;
-                    }
-                    const { message } = event;
-                    setError(`Initialization error: ${message}`);
-                });
-                playerRef.current.addListener('authentication_error', (event) => {
-                    if (!('message' in event)) {
-                        return;
-                    }
-                    const { message } = event;
-                    setError(`Authentication error: ${message}`);
-                });
-                playerRef.current.addListener('account_error', (event) => {
-                    if (!('message' in event)) {
-                        return;
-                    }
-                    const { message } = event;
-                    setError(`Account error: ${message}`);
-                });
-                playerRef.current.addListener('playback_error', (event) => {
-                    if (!('message' in event)) {
-                        return;
-                    }
-                    const { message } = event;
-                    setError(`Playback error: ${message}`);
-                });
-                playerRef.current.connect();
-            } catch (err: unknown) {
-                setError(getErrorMessage(err));
+    const initializePlayer = async () => {
+        try {
+            await loadSpotifySDK();
+            const token = await getAccessToken();
+            tokenRef.current = token;
+            if (!window.Spotify) {
+                throw new Error('Spotify SDK failed to load');
             }
+            const player = new window.Spotify.Player({
+                name: 'Bias Arcade Player',
+                getOAuthToken: (cb: (token: string) => void) => {
+                    cb(tokenRef.current!);
+                },
+            });
+            player.addListener('ready', (event) => {
+                if (!('device_id' in event)) {
+                    return;
+                }
+                const { device_id } = event;
+                setDeviceId(device_id);
+                setIsReady(true);
+            });
+            player.addListener('initialization_error', (event) => {
+                if (!('message' in event)) {
+                    return;
+                }
+                const { message } = event;
+                setError(`Initialization error: ${message}`);
+            });
+            player.addListener('authentication_error', (event) => {
+                if (!('message' in event)) {
+                    return;
+                }
+                const { message } = event;
+                setError(`Authentication error: ${message}`);
+            });
+            player.addListener('account_error', (event) => {
+                if (!('message' in event)) {
+                    return;
+                }
+                const { message } = event;
+                setError(`Account error: ${message}`);
+            });
+            player.addListener('playback_error', (event) => {
+                if (!('message' in event)) {
+                    return;
+                }
+                const { message } = event;
+                setError(`Playback error: ${message}`);
+            });
+            player.connect();
+            playerRef.current = player;
+        } catch (err: unknown) {
+            setError(getErrorMessage(err));
         }
-        initializePlayer();
+    };
+
+    useEffect(() => {
+        void initializePlayer();
+
+        return () => {
+            if (playerRef.current) {
+                void playerRef.current.disconnect();
+                playerRef.current = null;
+            }
+        };
     }, []);
 
     const playSnippet = async (trackURI: string, startMs: number, lengthMs: number) => {
@@ -221,9 +233,26 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
         }
     };
 
+    const resetPlayer = async () => {
+        if (playerRef.current) {
+            try{
+                await playerRef.current.pause();
+                playerRef.current.disconnect();
+            } catch (err: unknown) {
+                console.error('Error disconnecting Spotify player:', getErrorMessage(err));
+            }
+            playerRef.current = null;
+        }
+        setIsReady(false);
+        setDeviceId(null);
+        setError(null);
+
+        await initializePlayer();
+    };
+
     return (
         <SpotifyPlaybackContext.Provider
-            value={{ isReady, deviceId, error, player: playerRef.current, playSnippet }}
+            value={{ isReady, deviceId, error, player: playerRef.current, playSnippet, resetPlayer }}
         >
             {children}
         </SpotifyPlaybackContext.Provider>

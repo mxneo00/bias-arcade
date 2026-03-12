@@ -31,7 +31,7 @@ type CreateGameResponse = {
 };
 
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, player, playSnippet } = useSpotifyPlayback();
+	const { isReady, error: playbackError, player, playSnippet, resetPlayer } = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -148,7 +148,6 @@ function GuessTheSongContent() {
 			const snippetLength = 8000;
 			const maxStart = Math.max(0, answerTrack.durationMs - snippetLength);
 			const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
-
 			await playSnippet(answerTrack.uri, startMs, snippetLength);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to play snippet";
@@ -223,6 +222,7 @@ function GuessTheSongContent() {
 				method: "DELETE",
 				cache: "no-store",
 			});
+			void resetPlayer();
 		}
 
 		setView("setup");

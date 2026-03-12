@@ -41,7 +41,7 @@ type CreateGameResponse = {
 };
 
 function SaveOneDropOneSongContent() {
-    const { isReady, error: playbackError, player, playSnippet } = useSpotifyPlayback();
+    const { isReady, error: playbackError, player, playSnippet, resetPlayer } = useSpotifyPlayback();
     const pointsPerSelection = 10;
     
     const [gameId, setGameId] = useState<string | null>(null);
@@ -204,6 +204,7 @@ function SaveOneDropOneSongContent() {
                 method: "DELETE",
                 cache: "no-store",
             });
+            void resetPlayer();
         }
 
         setView("setup");
