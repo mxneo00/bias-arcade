@@ -146,7 +146,7 @@ function SaveOneDropOneSongContent() {
         setIsPlaying(true);
 
         try {
-            const snippetLength = 30 * 1000; // 30 seconds
+            const snippetLength = 20 * 1000; // 10 seconds
             const maxStart = Math.max(0, track.duration_ms - snippetLength);
             const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
             await playSnippet(track.uri, startMs, snippetLength);
