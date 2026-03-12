@@ -198,13 +198,13 @@ function SaveOneDropOneSongContent() {
         void loadRound();
     }
 
-    function handleEndGame() {
+    async function handleEndGame() {
         if (gameId) {
             void fetch(`/api/games/save-one-drop-one-song/game?gameId=${encodeURIComponent(gameId)}`, {
                 method: "DELETE",
                 cache: "no-store",
             });
-            void resetPlayer();
+            await resetPlayer();
         }
 
         setView("setup");

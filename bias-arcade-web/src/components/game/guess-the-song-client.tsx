@@ -216,13 +216,18 @@ function GuessTheSongContent() {
 		void loadRound();
 	}
 
-	function handleEndGame() {
+	async function handleEndGame() {
 		if (gameId) {
 			void fetch(`/api/games/guess-the-song/${gameId}`, {
 				method: "DELETE",
 				cache: "no-store",
 			});
-			void resetPlayer();
+			try {
+				await resetPlayer();
+			} catch (error) {
+				// If resetting the player fails, we still want to end the game session, so we catch and ignore errors here.
+				console.error("Failed to reset Spotify player on game end:", error);
+			}
 		}
 
 		setView("setup");

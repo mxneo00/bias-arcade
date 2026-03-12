@@ -156,6 +156,17 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
                 setDeviceId(device_id);
                 setIsReady(true);
             });
+            await fetch('https://api.spotify.com/v1/me/player', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${tokenRef.current}`,
+                },
+                body: JSON.stringify({
+                    device_ids: [deviceId],
+                    play: false,
+                }),
+            });
             player.addListener('initialization_error', (event) => {
                 if (!('message' in event)) {
                     return;
@@ -188,6 +199,7 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
             playerRef.current = player;
         } catch (err: unknown) {
             setError(getErrorMessage(err));
+            console.error('Error initializing Spotify player:', getErrorMessage(err));
         }
     };
 
@@ -247,7 +259,11 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
         setDeviceId(null);
         setError(null);
 
-        await initializePlayer();
+        try {
+            await initializePlayer();
+        } catch (err: unknown) {
+            console.error('Error re-initializing Spotify player:', getErrorMessage(err));
+        }
     };
 
     return (
