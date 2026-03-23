@@ -4,7 +4,11 @@ import { fetchTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySourc
 import { dedupeTracks, shuffle } from "@/lib/games/save-one-drop-one-song/helpers";
 import { GameRound, SongA, SongB } from "@/lib/games/save-one-drop-one-song/types";
 
-const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
+const DEFAULT_SEED_GENRES = [
+    "k-pop", "k-rock", "korean-pop", "korean-rock", 
+    "kpop", "kpop", "korean pop", "korean rock",
+    "kpop boy group", "kpop girl group", "korean idol", "korean band",
+    ];
 
 const MIN_POOL = 60;
 const REFILL_BATCH = 50;
