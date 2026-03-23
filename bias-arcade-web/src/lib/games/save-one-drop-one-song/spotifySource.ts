@@ -118,7 +118,6 @@ async function fetchArtistGenresMap(request: NextRequest, artistIds: string[]): 
 async function prioritizeKoreanTracks(
     request: NextRequest, 
     tracks: CandidateTrack[],
-    requestedLimit: number
 ): Promise<CandidateTrack[]> {
     if (tracks.length === 0) {
         return [];
@@ -160,10 +159,6 @@ async function prioritizeKoreanTracks(
         }
     }
 
-    const minimumTarget = Math.max(4, Math.ceil(requestedLimit * 0.5));
-    if (matched.length >= minimumTarget) {
-        return matched;
-    }
     return [...matched, ...unmatched];
 }
 
@@ -238,7 +233,7 @@ export async function fetchTrackBatch(
         if (response.ok) {
             const payload = (await response.json()) as SpotifyRecommendationsResponse;
             const tracks = (payload.tracks ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
-            const prioritizedTracks = await prioritizeKoreanTracks(request, tracks, limit);
+            const prioritizedTracks = await prioritizeKoreanTracks(request, tracks);
             return dedupeTracks(prioritizedTracks);
         }
     
@@ -259,6 +254,6 @@ export async function fetchTrackBatch(
     
         const searchPayload = (await searchRes.json()) as SpotifySearchResponse;
         const tracks = (searchPayload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
-        const prioritizedTracks = await prioritizeKoreanTracks(request, tracks, limit);
+        const prioritizedTracks = await prioritizeKoreanTracks(request, tracks);
         return dedupeTracks(prioritizedTracks);
 }

@@ -6,12 +6,9 @@ type GameSession = {
     variant: string;
     createdAt: number;
     updatedAt: number;
-
     pool: RoundTrack[];
-
     usedAnswers: Set<string>;
     usedOptions: Set<string>;
-
     roundNumber: number;
 }
 
@@ -37,10 +34,11 @@ export function createSession(settings: GameSettings): GameSession {
 
     const id = crypto.randomUUID();
     const now = Date.now();
+    const variant = crypto.randomUUID().slice(0, 8);
     const session: GameSession = {
         id,
         settings,
-        variant: crypto.randomUUID().slice(0, 8),
+        variant: variant,
         createdAt: now,
         updatedAt: now,
         pool: [],
