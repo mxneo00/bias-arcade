@@ -25,8 +25,11 @@ type SpotifyArtistsResponse = { artists?: SpotifyArtistDetails[]; };
 
 type CandidateTrack = RoundTrack & { artistIds: string[] };
 
-const ALLOWED_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
-const KOREAN_GENRE_MARKERS = ["k-pop", "kpop", "korean pop", "k-rock", "krock", "korean rock"];
+const ALLOWED_SEED_GENRES = [
+    "k-pop", "k-rock", "korean-pop", "korean-rock", 
+    "kpop", "kpop", "korean pop", "korean rock",
+    "kpop boy group", "kpop girl group", "korean idol", "korean band",
+    ];
 
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
@@ -43,13 +46,6 @@ function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] 
     );
 
     return fallbackNormalized.length > 0 ? fallbackNormalized : ["k-pop", "k-rock"];
-}
-
-function hasKoreanGenre(genres: string[]): boolean {
-    return genres.some((genre) => {
-        const normalized = genre.trim().toLowerCase();
-        return KOREAN_GENRE_MARKERS.some((marker) => normalized.includes(marker));
-    });
 }
 
 function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
@@ -153,7 +149,7 @@ async function prioritizeKoreanGenreTracks(
 
         const isMatch = track.artistIds.some((artistId) => {
             const genres = artistGenresMap.get(artistId) ?? [];
-            return hasKoreanGenre(genres);
+            return genres.some((genre) => ALLOWED_SEED_GENRES.includes(genre.trim().toLowerCase()));
         });
 
         if (isMatch) {

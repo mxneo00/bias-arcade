@@ -31,7 +31,7 @@ type CreateGameResponse = {
 };
 
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, player, playSnippet } = useSpotifyPlayback();
+	const { isReady, error: playbackError, player, playSnippet, resetPlayer } = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -148,7 +148,6 @@ function GuessTheSongContent() {
 			const snippetLength = 8000;
 			const maxStart = Math.max(0, answerTrack.durationMs - snippetLength);
 			const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
-
 			await playSnippet(answerTrack.uri, startMs, snippetLength);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to play snippet";
@@ -217,12 +216,18 @@ function GuessTheSongContent() {
 		void loadRound();
 	}
 
-	function handleEndGame() {
+	async function handleEndGame() {
 		if (gameId) {
 			void fetch(`/api/games/guess-the-song/${gameId}`, {
 				method: "DELETE",
 				cache: "no-store",
 			});
+			try {
+				await resetPlayer();
+			} catch (error) {
+				// If resetting the player fails, we still want to end the game session, so we catch and ignore errors here.
+				console.error("Failed to reset Spotify player on game end:", error);
+			}
 		}
 
 		setView("setup");

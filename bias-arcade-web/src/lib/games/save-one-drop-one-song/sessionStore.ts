@@ -7,10 +7,8 @@ type GameSession = {
     createdAt: number;
     updatedAt: number;
     pool: (SongA | SongB)[];
-    usedSongAIds: Set<string>;
-    usedSongBIds: Set<string>;
     roundNumber: number;
-    usedOptions: Set<string>;
+    recentlyUsedIds: string[];
 }
 
 const GAME_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -36,17 +34,16 @@ export function createSession(settings: GameSettings): GameSession {
 
     const id = crypto.randomUUID();
     const now = Date.now();
+    const variant = crypto.randomUUID().slice(0, 8);
     const session: GameSession = {
         id,
         settings,
-        variant: "default",
+        variant: variant,
         createdAt: now,
         updatedAt: now,
         pool: [],
-        usedSongAIds: new Set(),
-        usedSongBIds: new Set(),
+        recentlyUsedIds: [],
         roundNumber: 0,
-        usedOptions: new Set(),
     };
     sessions.set(id, session);
     return session;

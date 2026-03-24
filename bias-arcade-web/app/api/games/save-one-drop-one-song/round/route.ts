@@ -4,18 +4,24 @@ import { fetchTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySourc
 import { dedupeTracks, shuffle } from "@/lib/games/save-one-drop-one-song/helpers";
 import { GameRound, SongA, SongB } from "@/lib/games/save-one-drop-one-song/types";
 
-const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
+const DEFAULT_SEED_GENRES = [
+    "k-pop", "k-rock", "korean-pop", "korean-rock", 
+    "kpop", "kpop", "korean pop", "korean rock",
+    "kpop boy group", "kpop girl group", "korean idol", "korean band",
+    ];
 
-const MIN_POOL = 30;
+const MIN_POOL = 60;
 const REFILL_BATCH = 50;
 const MAX_REFILL_ATTEMPTS = 3;
+const USED_WINDOW = 60;
 
 function getFresh(session: {
   pool: (SongA | SongB)[];
-  usedOptions: Set<string>;
+  recentlyUsedIds: string[];
 }) {
+  const recent = new Set(session.recentlyUsedIds);
   return session.pool.filter(
-    (t) => !session.usedOptions.has(t.id)
+    (t) => !recent.has(t.id)
   );
 }
 
@@ -37,6 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     if (session.pool.length < MIN_POOL) {
       const batch = await fetchTrackBatch(request, {
+        variant: `${session.variant}:${session.roundNumber}:0`,
         market: session.settings.market,
         seedGenres: session.settings.seedGenres,
         limit: REFILL_BATCH,
@@ -44,8 +51,9 @@ export async function POST(request: NextRequest) {
       });
     
       const poolIds = new Set(session.pool.map((t) => t.id));
+      const recent = new Set(session.recentlyUsedIds);
       const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id) && !session.usedSongAIds.has(t.id) && !session.usedSongBIds.has(t.id)
+        (t) => !poolIds.has(t.id) && !recent.has(t.id)
       );
 
       session.pool = dedupeTracks([...session.pool, ...toAdd]);
@@ -53,11 +61,12 @@ export async function POST(request: NextRequest) {
 
     let fresh = getFresh(session);
     for (
-        let attempt = 0;
+        let attempt = 1;
         attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
         attempt += 1
     ) {
       const batch = await fetchTrackBatch(request, {
+        variant: `${session.variant}:${session.roundNumber}:${attempt}`,
         market: session.settings.market,
         seedGenres: session.settings.seedGenres,
         limit: REFILL_BATCH,
@@ -65,8 +74,9 @@ export async function POST(request: NextRequest) {
       });
 
       const poolIds = new Set(session.pool.map((t) => t.id));
+      const recent = new Set(session.recentlyUsedIds);
       const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id) && !session.usedSongAIds.has(t.id) && !session.usedSongBIds.has(t.id)
+        (t) => !poolIds.has(t.id) && !recent.has(t.id)
       );
 
       session.pool = dedupeTracks([...session.pool, ...toAdd]);
@@ -77,10 +87,7 @@ export async function POST(request: NextRequest) {
     let usedFallback = false;
 
     if (candidates.length < 2) {
-      candidates = session.pool.filter(
-        (t) =>
-          !session.usedSongAIds.has(t.id) && !session.usedSongBIds.has(t.id)
-      );
+      candidates = session.pool;
       usedFallback = true;
     }
 
@@ -91,10 +98,13 @@ export async function POST(request: NextRequest) {
 
     const shuffled = shuffle(candidates);
     const [songA, songB] = shuffled;
-    session.usedOptions.add(songA.id);
-    session.usedOptions.add(songB.id);
-    session.usedSongAIds.add(songA.id);
-    session.usedSongBIds.add(songB.id);
+    session.pool = session.pool.filter(
+      (t) => t.id !== songA.id && t.id !== songB.id
+    );
+    session.recentlyUsedIds.push(songA.id, songB.id);
+    if (session.recentlyUsedIds.length > USED_WINDOW) {
+      session.recentlyUsedIds.splice(0, session.recentlyUsedIds.length - USED_WINDOW);
+    }
     session.roundNumber += 1;
 
     const round: GameRound & { source?: string } = {
@@ -104,7 +114,6 @@ export async function POST(request: NextRequest) {
       source: usedFallback ? "fallback" : "pool",
     };
     return NextResponse.json(round);
-
   } catch (error) {    
     console.error("Error generating round:", error);
     return NextResponse.json({ error: "Failed to generate round" }, { status: 500 });

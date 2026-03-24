@@ -41,7 +41,7 @@ type CreateGameResponse = {
 };
 
 function SaveOneDropOneSongContent() {
-    const { isReady, error: playbackError, player, playSnippet } = useSpotifyPlayback();
+    const { isReady, error: playbackError, player, playSnippet, resetPlayer } = useSpotifyPlayback();
     const pointsPerSelection = 10;
     
     const [gameId, setGameId] = useState<string | null>(null);
@@ -146,7 +146,7 @@ function SaveOneDropOneSongContent() {
         setIsPlaying(true);
 
         try {
-            const snippetLength = 30 * 1000; // 30 seconds
+            const snippetLength = 20 * 1000; // 10 seconds
             const maxStart = Math.max(0, track.duration_ms - snippetLength);
             const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
             await playSnippet(track.uri, startMs, snippetLength);
@@ -198,12 +198,13 @@ function SaveOneDropOneSongContent() {
         void loadRound();
     }
 
-    function handleEndGame() {
+    async function handleEndGame() {
         if (gameId) {
             void fetch(`/api/games/save-one-drop-one-song/game?gameId=${encodeURIComponent(gameId)}`, {
                 method: "DELETE",
                 cache: "no-store",
             });
+            await resetPlayer();
         }
 
         setView("setup");

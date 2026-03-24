@@ -4,7 +4,11 @@ import { fetchTrackBatch } from "@/lib/games/guess-the-song/spotifySource";
 import { dedupeTracks, shuffle } from "@/lib/games/guess-the-song/helpers";
 import { RoundPayload, RoundTrack } from "@/lib/games/guess-the-song/types";
 
-const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
+const DEFAULT_SEED_GENRES = [
+    "k-pop", "k-rock", "korean-pop", "korean-rock", 
+    "kpop", "kpop", "korean pop", "korean rock",
+    "kpop boy group", "kpop girl group", "korean idol", "korean band",
+    ];
 
 const MIN_POOL = 30;
 const REFILL_BATCH = 50;
