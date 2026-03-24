@@ -1,12 +1,45 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { compare } from "bcryptjs";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-import { db } from "@/server/db";
+type FirebaseSignInSuccess = {
+  localId: string;
+  email: string;
+  displayName?: string;
+};
+
+const signInWithFirebasePassword = async (
+  email: string,
+  password: string
+): Promise<FirebaseSignInSuccess | null> => {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Missing required environment variable: NEXT_PUBLIC_FIREBASE_API_KEY");
+  }
+
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        returnSecureToken: true,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return (await response.json()) as FirebaseSignInSuccess;
+};
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
   secret:
     process.env.NEXTAUTH_SECRET ??
     (process.env.NODE_ENV === "development" ? "dev-fallback-auth-secret" : undefined),
@@ -31,25 +64,17 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await db.user.findUnique({
-          where: { email },
-        });
+        const signInResult = await signInWithFirebasePassword(email, password);
 
-        if (!user) {
-          return null;
-        }
-
-        const passwordMatches = await compare(password, user.passwordHash);
-
-        if (!passwordMatches) {
+        if (!signInResult) {
           return null;
         }
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
+          id: signInResult.localId,
+          email: signInResult.email,
+          name: signInResult.displayName ?? null,
+          image: null,
         };
       },
     }),
