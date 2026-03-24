@@ -162,7 +162,7 @@ function SaveOneDropOneSongContent() {
         if (isLoadingRound) return;
         setSelectedTrackId(trackId);
         
-        if (trackId === currentPair?.songA.id) {
+        if (trackId === currentPair?.songA.id || trackId === currentPair?.songB.id) {
             setScore((prev) => prev + pointsPerSelection);
         } else {
             setScore((prev) => Math.max(0, prev - pointsPerSelection));
