@@ -41,9 +41,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (session.pool.length < MIN_POOL) {
+    for (
+      let attempt = 0;
+      attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+      attempt += 1
+    ) {
       const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:0`,
+        variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
         market: session.settings.market,
         seedGenres: session.settings.seedGenres,
         limit: REFILL_BATCH,
@@ -51,9 +55,8 @@ export async function POST(request: NextRequest) {
       });
     
       const poolIds = new Set(session.pool.map((t) => t.id));
-      const recent = new Set(session.recentlyUsedIds);
       const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id) && !recent.has(t.id)
+        (t) => !poolIds.has(t.id)
       );
 
       session.pool = dedupeTracks([...session.pool, ...toAdd]);
@@ -61,12 +64,12 @@ export async function POST(request: NextRequest) {
 
     let fresh = getFresh(session);
     for (
-        let attempt = 1;
-        attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
-        attempt += 1
+      let attempt = 0;
+      attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
+      attempt += 1
     ) {
       const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:${attempt}`,
+        variant: `${session.variant}:${session.roundNumber}:fresh:${attempt}`,
         market: session.settings.market,
         seedGenres: session.settings.seedGenres,
         limit: REFILL_BATCH,
@@ -74,9 +77,8 @@ export async function POST(request: NextRequest) {
       });
 
       const poolIds = new Set(session.pool.map((t) => t.id));
-      const recent = new Set(session.recentlyUsedIds);
       const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id) && !recent.has(t.id)
+        (t) => !poolIds.has(t.id)
       );
 
       session.pool = dedupeTracks([...session.pool, ...toAdd]);

@@ -162,7 +162,7 @@ function SaveOneDropOneSongContent() {
         if (isLoadingRound) return;
         setSelectedTrackId(trackId);
         
-        if (trackId === currentPair?.songA.id) {
+        if (trackId === currentPair?.songA.id || trackId === currentPair?.songB.id) {
             setScore((prev) => prev + pointsPerSelection);
         } else {
             setScore((prev) => Math.max(0, prev - pointsPerSelection));
@@ -270,13 +270,6 @@ function SaveOneDropOneSongContent() {
                         </div>
 
                         <section className={styles.controls}>
-                            <button 
-                                type="button" 
-                                onClick={() => loadRound()} 
-                                disabled={isLoadingRound}
-                            >
-                                {isLoadingRound ? "Loading Round..." : "Refresh Round"}
-                            </button>
                             <button
                                 type="button"
                                 onClick={handleGoToResults}
@@ -303,6 +296,10 @@ function SaveOneDropOneSongContent() {
 								Reconnect Spotify
 							</Link>
 						) : null}
+
+                        {isLoadingRound ? (
+                            <p className={styles.status}>Loading next round...</p>
+                        ) : null}
 
                         <section className={styles.songOptions}>
                             {currentPair ? (
