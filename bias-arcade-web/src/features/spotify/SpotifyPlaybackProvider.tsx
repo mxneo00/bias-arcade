@@ -34,6 +34,7 @@ type SpotifyPlayerInstance = {
     pause: () => Promise<void>;
     disconnect: () => Promise<void>;
     setVolume: (volume: number) => Promise<void>;
+    activateElement?: () => Promise<void>;
 };
 
 type SpotifySDK = {
@@ -112,8 +113,54 @@ async function getAccessToken(): Promise<string> {
     return token;
 }
 
-async function transferPlaybackToDevice(deviceId: string, accessToken: string) {
-    await fetch('https://api.spotify.com/v1/me/player', {
+function wait(ms: number) {
+    return new Promise<void>((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
+
+async function isDeviceAvailable(deviceId: string, accessToken: string): Promise<boolean> {
+    const response = await fetch('https://api.spotify.com/v1/me/player/devices', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    if (!response.ok) {
+        return false;
+    }
+
+    const payload = (await response.json().catch(() => ({}))) as {
+        devices?: Array<{ id?: string }>;
+    };
+
+    return (payload.devices ?? []).some((device) => device.id === deviceId);
+}
+
+async function waitForDeviceAvailability(
+    deviceId: string,
+    accessToken: string,
+    maxAttempts = 12,
+    delayMs = 300,
+): Promise<void> {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const available = await isDeviceAvailable(deviceId, accessToken);
+        if (available) {
+            return;
+        }
+
+        await wait(delayMs);
+    }
+
+    throw new Error('Spotify Web Playback device did not become available in time. Open the Spotify app and keep this tab active, then try again.');
+}
+
+async function transferPlaybackToDevice(deviceId: string, accessToken: string): Promise<void> {
+    await waitForDeviceAvailability(deviceId, accessToken);
+
+    const response = await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -124,6 +171,48 @@ async function transferPlaybackToDevice(deviceId: string, accessToken: string) {
             play: false,
         }),
     });
+
+    if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`Failed to transfer playback: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`);
+    }
+}
+
+async function playTrackOnDevice(
+    deviceId: string,
+    accessToken: string,
+    trackURI: string,
+    startMs: number,
+    attempts = 3,
+): Promise<void> {
+    let lastError: string | null = null;
+
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        const playResponse = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+                uris: [trackURI],
+                position_ms: startMs,
+            }),
+        });
+
+        if (playResponse.ok) {
+            return;
+        }
+
+        const body = await playResponse.text().catch(() => '');
+        lastError = `Spotify play request failed: ${playResponse.status} ${playResponse.statusText}${body ? ` - ${body}` : ''}`;
+
+        if (attempt < attempts) {
+            await wait(300);
+        }
+    }
+
+    throw new Error(lastError ?? 'Spotify play request failed');
 }
 
 export function SpotifyPlaybackProvider({ children }: { children: React.ReactNode }) {
@@ -155,17 +244,10 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
                 const { device_id } = event;
                 setDeviceId(device_id);
                 setIsReady(true);
-            });
-            await fetch('https://api.spotify.com/v1/me/player', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${tokenRef.current}`,
-                },
-                body: JSON.stringify({
-                    device_ids: [deviceId],
-                    play: false,
-                }),
+                // Ensure Spotify routes playback to this SDK device once it is actually ready.
+                void transferPlaybackToDevice(device_id, tokenRef.current!).catch((err: unknown) => {
+                    setError(`Failed to transfer playback: ${getErrorMessage(err)}`);
+                });
             });
             player.addListener('initialization_error', (event) => {
                 if (!('message' in event)) {
@@ -195,7 +277,10 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
                 const { message } = event;
                 setError(`Playback error: ${message}`);
             });
-            player.connect();
+            const connected = await player.connect();
+            if (!connected) {
+                throw new Error('Spotify player failed to connect. Ensure Spotify is open and this tab has audio permission.');
+            }
             playerRef.current = player;
         } catch (err: unknown) {
             setError(getErrorMessage(err));
@@ -219,29 +304,35 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
             throw new Error('Spotify player is not ready');
         }
         try {
-            await transferPlaybackToDevice(deviceId, tokenRef.current!);
-            await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${tokenRef.current}`,
-                },
-                body: JSON.stringify({
-                    uris: [trackURI],
-                    position_ms: startMs,
-                }),
-            });
+            const accessToken = await getAccessToken();
+            tokenRef.current = accessToken;
+
+            if (playerRef.current?.activateElement) {
+                await playerRef.current.activateElement();
+            }
+
+            try {
+                await transferPlaybackToDevice(deviceId, accessToken);
+            } catch (transferError) {
+                // Spotify can lag publishing a newly ready Web Playback device; play retries below can still succeed.
+                console.warn('Transfer playback failed, attempting direct play:', getErrorMessage(transferError));
+            }
+
+            await playTrackOnDevice(deviceId, accessToken, trackURI, startMs);
+
             setTimeout(async () => {
                 await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        Authorization: `Bearer ${tokenRef.current}`,
+                        Authorization: `Bearer ${accessToken}`,
                     },
                 });
             }, lengthMs);
         } catch (err: unknown) {
-            setError(`Failed to play snippet: ${getErrorMessage(err)}`);
+            const message = `Failed to play snippet: ${getErrorMessage(err)}`;
+            setError(message);
+            throw new Error(message);
         }
     };
 
