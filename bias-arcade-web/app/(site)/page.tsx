@@ -63,8 +63,8 @@ export default async function Home() {
                   <p>
                     See your latest unlock and visit your full collection page.
                   </p>
-                  <Link href="/profile" className={styles.secondaryLink}>
-                    Go to Collections Placeholder
+                  <Link href="/collection" className={styles.secondaryLink}>
+                    Go to Collections
                   </Link>
                 </article>
               </div>
