@@ -245,6 +245,14 @@ function SaveOneDropOneSongContent() {
 								Start Game
 							</button>
 						</div>
+
+                        {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+
+                        {requireSpotifyReconnect ? (
+                            <Link href="/api/integrations/spotify/login" className={styles.backLink}>
+                                Reconnect Spotify
+                            </Link>
+                        ) : null}
 					</section>
                 ): null}
 

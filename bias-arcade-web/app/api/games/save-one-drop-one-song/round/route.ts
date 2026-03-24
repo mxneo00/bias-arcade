@@ -115,7 +115,31 @@ export async function POST(request: NextRequest) {
     };
     return NextResponse.json(round);
   } catch (error) {    
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
+
+    const rateLimitMatch = message.match(/Spotify rate limited\. Please retry in (\d+) seconds\./);
+    if (rateLimitMatch) {
+      return NextResponse.json(
+        {
+          error: message,
+          code: "SPOTIFY_RATE_LIMITED",
+          retryAfterSeconds: Number.parseInt(rateLimitMatch[1], 10),
+        },
+        { status: 429 }
+      );
+    }
+
+    if (message === "Spotify re-authorization required") {
+      return NextResponse.json(
+        {
+          error: "Spotify connection expired. Please reconnect your Spotify account.",
+          code: "SPOTIFY_REAUTH_REQUIRED",
+        },
+        { status: 401 }
+      );
+    }
+
     console.error("Error generating round:", error);
-    return NextResponse.json({ error: "Failed to generate round" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
