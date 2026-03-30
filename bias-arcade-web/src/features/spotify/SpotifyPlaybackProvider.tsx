@@ -7,7 +7,10 @@ type SpotifyPlaybackContextType = {
     deviceId: string | null;
     error: string | null;
     player: SpotifyPlayerInstance | null;
+    isSnippetPlaying: boolean;
+    activeTrackUri: string | null;
     playSnippet: (trackURI: string, startMs: number, lengthMs: number) => Promise<void>;
+    pauseSnippet: () => Promise<void>;
     resetPlayer: () => Promise<void>;
 };
 
@@ -219,9 +222,37 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
     const [isReady, setIsReady] = useState(false);
     const [deviceId, setDeviceId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isSnippetPlaying, setIsSnippetPlaying] = useState(false);
+    const [activeTrackUri, setActiveTrackUri] = useState<string | null>(null);
 
     const playerRef = useRef<SpotifyPlayerInstance | null>(null);
     const tokenRef = useRef<string | null>(null);
+    const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const snippetInFlightRef = useRef(false);
+
+    const clearPauseTimeout = () => {
+        if (pauseTimeoutRef.current) {
+            clearTimeout(pauseTimeoutRef.current);
+            pauseTimeoutRef.current = null;
+        }
+    };
+
+    const pausePlaybackOnDevice = async (resolvedDeviceId: string, accessToken: string) => {
+        const response = await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${resolvedDeviceId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+            throw new Error(
+                `Spotify pause request failed: ${response.status} ${response.statusText}${body ? ` - ${body}` : ''}`,
+            );
+        }
+    };
 
     const initializePlayer = async () => {
         try {
@@ -292,6 +323,8 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
         void initializePlayer();
 
         return () => {
+            clearPauseTimeout();
+
             if (playerRef.current) {
                 void playerRef.current.disconnect();
                 playerRef.current = null;
@@ -303,6 +336,14 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
         if (!deviceId) {
             throw new Error('Spotify player is not ready');
         }
+
+        if (snippetInFlightRef.current) {
+            return;
+        }
+
+        snippetInFlightRef.current = true;
+        clearPauseTimeout();
+
         try {
             const accessToken = await getAccessToken();
             tokenRef.current = accessToken;
@@ -319,24 +360,55 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
             }
 
             await playTrackOnDevice(deviceId, accessToken, trackURI, startMs);
+            setIsSnippetPlaying(true);
+            setActiveTrackUri(trackURI);
 
-            setTimeout(async () => {
-                await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                });
+            pauseTimeoutRef.current = setTimeout(async () => {
+                try {
+                    await pausePlaybackOnDevice(deviceId, accessToken);
+                } catch {
+                    // Auto-pause is best effort; surfaced errors should come from explicit user actions.
+                } finally {
+                    setIsSnippetPlaying(false);
+                    setActiveTrackUri(null);
+                    pauseTimeoutRef.current = null;
+                }
             }, lengthMs);
         } catch (err: unknown) {
+            setIsSnippetPlaying(false);
+            setActiveTrackUri(null);
             const message = `Failed to play snippet: ${getErrorMessage(err)}`;
+            setError(message);
+            throw new Error(message);
+        } finally {
+            snippetInFlightRef.current = false;
+        }
+    };
+
+    const pauseSnippet = async () => {
+        if (!deviceId) {
+            throw new Error('Spotify player is not ready');
+        }
+
+        clearPauseTimeout();
+
+        try {
+            const accessToken = await getAccessToken();
+            tokenRef.current = accessToken;
+
+            await pausePlaybackOnDevice(deviceId, accessToken);
+            setIsSnippetPlaying(false);
+            setActiveTrackUri(null);
+        } catch (err: unknown) {
+            const message = `Failed to pause snippet: ${getErrorMessage(err)}`;
             setError(message);
             throw new Error(message);
         }
     };
 
     const resetPlayer = async () => {
+        clearPauseTimeout();
+
         if (playerRef.current) {
             try{
                 await playerRef.current.pause();
@@ -349,6 +421,8 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
         setIsReady(false);
         setDeviceId(null);
         setError(null);
+        setIsSnippetPlaying(false);
+        setActiveTrackUri(null);
 
         try {
             await initializePlayer();
@@ -359,7 +433,17 @@ export function SpotifyPlaybackProvider({ children }: { children: React.ReactNod
 
     return (
         <SpotifyPlaybackContext.Provider
-            value={{ isReady, deviceId, error, player: playerRef.current, playSnippet, resetPlayer }}
+            value={{
+                isReady,
+                deviceId,
+                error,
+                player: playerRef.current,
+                isSnippetPlaying,
+                activeTrackUri,
+                playSnippet,
+                pauseSnippet,
+                resetPlayer,
+            }}
         >
             {children}
         </SpotifyPlaybackContext.Provider>
