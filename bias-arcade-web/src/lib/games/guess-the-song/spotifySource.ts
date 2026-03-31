@@ -80,6 +80,20 @@ function isInvalidLimitError(body: string) {
     return body.toLowerCase().includes("invalid limit");
 }
 
+function getRetryAfterSeconds(response: Response): number {
+    const raw = response.headers.get("retry-after");
+    if (!raw) {
+        return 60;
+    }
+
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > 0) {
+        return parsed;
+    }
+
+    return 60;
+}
+
 async function fetchArtistGenresMap(request: NextRequest, artistIds: string[]): Promise<Map<string, string[]>> {
     const map = new Map<string, string[]>();
     if (artistIds.length === 0) {
@@ -232,6 +246,9 @@ export async function fetchTrackBatch(
         const body = await readBodySafe(response);
         if (response.status === 400 && isInvalidLimitError(body)) {
             response = await doRecs(usedGenres, LIMIT_RETRY_FALLBACK);
+        } else if (response.status === 429) {
+            const retryAfterSeconds = getRetryAfterSeconds(response);
+            throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
         }
     }
 
@@ -247,16 +264,12 @@ export async function fetchTrackBatch(
     if (!searchRes.ok) {
         const body = await readBodySafe(searchRes);
         if (searchRes.status === 400 && isInvalidLimitError(body)) {
-        searchRes = await doSearch(usedGenres, LIMIT_RETRY_FALLBACK);
+            searchRes = await doSearch(usedGenres, LIMIT_RETRY_FALLBACK);
+        } else if (searchRes.status === 429) {
+            const retryAfterSeconds = getRetryAfterSeconds(searchRes);
+            throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
         }
     }
-
-    if (!searchRes.ok) {
-        const recBody = await readBodySafe(response);
-        const searchBody = await readBodySafe(searchRes);
-        throw new Error(`Failed to fetch tracks. Recommendations response: ${recBody}, Search response: ${searchBody}`);
-    }
-
     const searchPayload = (await searchRes.json()) as SpotifySearchResponse;
     const tracks = (searchPayload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
     const prioritizedTracks = await prioritizeKoreanGenreTracks(request, tracks, limit);

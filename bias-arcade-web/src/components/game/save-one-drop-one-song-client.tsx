@@ -49,7 +49,7 @@ function SaveOneDropOneSongContent() {
         isSnippetPlaying,
         activeTrackUri,
     } = useSpotifyPlayback();
-    const pointsPerSelection = 10;
+    const pointsPerSelection = 5;
     
     const [gameId, setGameId] = useState<string | null>(null);
 

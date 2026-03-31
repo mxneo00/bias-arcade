@@ -30,7 +30,15 @@ type CreateGameResponse = {
 };
 
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, player, playSnippet, pauseSnippet, isSnippetPlaying, activeTrackUri } = useSpotifyPlayback();
+	const { 
+		isReady, 
+		error: playbackError, 
+		player, 
+		playSnippet, 
+		pauseSnippet, 
+		isSnippetPlaying, 
+		activeTrackUri 
+	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -114,7 +122,6 @@ function GuessTheSongContent() {
 			}
 
 			const data = (await response.json()) as RoundResponse;
-
 			setRoundNumber(data.roundNumber);
 			setOptions(data.options);
 			setAnswerTrack(data.answer);

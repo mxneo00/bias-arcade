@@ -10,23 +10,25 @@ const DEFAULT_SEED_GENRES = [
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
     ];
 
-const MIN_POOL = 30;
+const MIN_POOL = 60;
 const REFILL_BATCH = 50;
 const MAX_REFILL_ATTEMPTS = 3;
+const USED_WINDOW = 60;
 
 function getFresh(session: {
   pool: RoundTrack[];
-  usedOptions: Set<string>;
+  recentlyUsedIds: string[];
   usedAnswers: Set<string>;
 }) {
+  const recent = new Set(session.recentlyUsedIds);
   return session.pool.filter(
-    (t) => !session.usedOptions.has(t.id) && !session.usedAnswers.has(t.id)
+    (t) => !recent.has(t.id) && !session.usedAnswers.has(t.id)
   );
 }
 
 function getNotAnswerUsed(session: {
   pool: RoundTrack[];
-  usedOptions: Set<string>;
+  recentlyUsedIds: string[];
   usedAnswers: Set<string>;
 }) {
   return session.pool.filter((t) => !session.usedAnswers.has(t.id));
@@ -46,38 +48,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (session.pool.length < MIN_POOL) {
-      const batch = await fetchTrackBatch(request, {
-        market: session.settings.market,
-        seedGenres: session.settings.seedGenres,
-        limit: REFILL_BATCH,
-        defaultSeedGenres: DEFAULT_SEED_GENRES,
-        variant: session.variant
-      });
-
-      const poolIds = new Set(session.pool.map((t) => t.id));
-      const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id) && !session.usedAnswers.has(t.id)
-      );
-
-      session.pool = dedupeTracks([...session.pool, ...toAdd]);
-    }
-
     const optionsCount = session.settings.optionsCount;
-
-    let fresh = getFresh(session);
-
     for (
       let attempt = 0;
-      attempt < MAX_REFILL_ATTEMPTS && fresh.length < optionsCount;
+      attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
       attempt += 1
     ) {
       const batch = await fetchTrackBatch(request, {
+        variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
         market: session.settings.market,
         seedGenres: session.settings.seedGenres,
         limit: REFILL_BATCH,
         defaultSeedGenres: DEFAULT_SEED_GENRES,
-        variant: session.variant
       });
 
       const poolIds = new Set(session.pool.map((t) => t.id));
@@ -86,31 +68,34 @@ export async function POST(request: NextRequest) {
       );
 
       session.pool = dedupeTracks([...session.pool, ...toAdd]);
-      fresh = getFresh(session);
+      if (getFresh(session).length >= optionsCount) break;
     }
-
-    let candidates = fresh;
+    let fresh = getFresh(session);
     let usedFallback = false;
 
-    if (candidates.length < optionsCount) {
-      candidates = getNotAnswerUsed(session);
+    if (fresh.length < optionsCount) {
+      fresh = getNotAnswerUsed(session);
       usedFallback = true;
     }
 
-    if (candidates.length < optionsCount) {
+    if (fresh.length < optionsCount) {
       return NextResponse.json(
         { error: "Not enough tracks to generate a round" },
         { status: 503 }
       );
     }
 
-    const shuffled = shuffle(candidates);
+    const shuffled = shuffle(fresh);
     const answer = shuffled[0];
     const distractors = shuffled.slice(1, optionsCount);
 
     session.roundNumber += 1;
     session.usedAnswers.add(answer.id);
-    [answer, ...distractors].forEach((t) => session.usedOptions.add(t.id));
+    
+    session.recentlyUsedIds.push(answer.id, ...distractors.map((t) => t.id));
+    if (session.recentlyUsedIds.length > USED_WINDOW) {
+      session.recentlyUsedIds.splice(0, session.recentlyUsedIds.length - USED_WINDOW);
+    }
 
     session.pool = session.pool.filter((t) => t.id !== answer.id);
 
@@ -125,6 +110,18 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "An unknown error occurred";
 
+    const rateLimitMatch = message.match(/Spotify rate limited\. Please retry in (\d+) seconds\./);
+    if (rateLimitMatch) {
+      return NextResponse.json(
+        {
+          error: message,
+          code: "SPOTIFY_RATE_LIMITED",
+          retryAfterSeconds: Number.parseInt(rateLimitMatch[1], 10),
+        },
+        { status: 429 }
+      );
+    }
+
     if (message === "Spotify re-authorization required") {
       return NextResponse.json(
         {
@@ -135,6 +132,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.error("Error generating round:", error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

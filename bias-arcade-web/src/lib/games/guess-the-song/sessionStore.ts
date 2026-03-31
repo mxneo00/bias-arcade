@@ -8,7 +8,7 @@ type GameSession = {
     updatedAt: number;
     pool: RoundTrack[];
     usedAnswers: Set<string>;
-    usedOptions: Set<string>;
+    recentlyUsedIds: string[];
     roundNumber: number;
 }
 
@@ -43,7 +43,7 @@ export function createSession(settings: GameSettings): GameSession {
         updatedAt: now,
         pool: [],
         usedAnswers: new Set(),
-        usedOptions: new Set(),
+        recentlyUsedIds: [],
         roundNumber: 0
     };
 
