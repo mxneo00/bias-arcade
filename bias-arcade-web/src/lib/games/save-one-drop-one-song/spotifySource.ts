@@ -174,7 +174,11 @@ async function prioritizeKoreanTracks(
 
 export async function fetchTrackBatch(
     request: NextRequest,
-    args: { market: string; seedGenres: string[]; defaultSeedGenres: string[]; variant?: string, limit: number }
+    args: { market: string; 
+        seedGenres: string[]; 
+        defaultSeedGenres: string[]; 
+        variant?: string, 
+        limit: number }
 ): Promise<CandidateTrack[]> {
     const { market, limit, variant } = args;
     const seedGenres = sanitizeSeedGenres(args.seedGenres, args.defaultSeedGenres);
