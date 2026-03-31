@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 
 import {
-	SpotifyPlaybackProvider,
 	useSpotifyPlayback,
 } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
+import { VolumeControl } from "@/components/game/volume-slider";
 
 import styles from "./page.module.css";
 
@@ -30,7 +30,15 @@ type CreateGameResponse = {
 };
 
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, playSnippet } = useSpotifyPlayback();
+	const { 
+		isReady, 
+		error: playbackError, 
+		player, 
+		playSnippet, 
+		pauseSnippet, 
+		isSnippetPlaying, 
+		activeTrackUri 
+	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -40,7 +48,7 @@ function GuessTheSongContent() {
 	const [answerTrackId, setAnswerTrackId] = useState<string | null>(null);
 	const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
-	const [isPlaying, setIsPlaying] = useState(false);
+
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [requiresSpotifyReconnect, setRequiresSpotifyReconnect] = useState(false);
 	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
@@ -114,7 +122,6 @@ function GuessTheSongContent() {
 			}
 
 			const data = (await response.json()) as RoundResponse;
-
 			setRoundNumber(data.roundNumber);
 			setOptions(data.options);
 			setAnswerTrack(data.answer);
@@ -135,25 +142,26 @@ function GuessTheSongContent() {
 		}
 	}
 
-	async function handlePlaySnippet() {
+	async function handleSnippetButtonClick() {
 		if (!answerTrack || !isReady) {
 			return;
 		}
 
-		setIsPlaying(true);
 		setErrorMessage(null);
 
 		try {
+			if (isSnippetPlaying && activeTrackUri === answerTrack.uri) {
+				await pauseSnippet();
+				return;
+			}
+
 			const snippetLength = 8000;
 			const maxStart = Math.max(0, answerTrack.durationMs - snippetLength);
 			const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
-
 			await playSnippet(answerTrack.uri, startMs, snippetLength);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to play snippet";
 			setErrorMessage(message);
-		} finally {
-			setIsPlaying(false);
 		}
 	}
 
@@ -170,6 +178,8 @@ function GuessTheSongContent() {
 		} else {
 			setStreak(0);
 		}
+
+		setView("results");
 	}
 
 	async function handleStartGame() {
@@ -214,7 +224,7 @@ function GuessTheSongContent() {
 		void loadRound();
 	}
 
-	function handleEndGame() {
+	async function handleEndGame() {
 		if (gameId) {
 			void fetch(`/api/games/guess-the-song/${gameId}`, {
 				method: "DELETE",
@@ -288,17 +298,25 @@ function GuessTheSongContent() {
 						</div>
 
 						<section className={styles.controls}>
-							<button type="button" onClick={() => loadRound()} disabled={isLoadingRound}>
+							<button 
+								type="button" 
+								onClick={() => loadRound()} 
+								disabled={isLoadingRound}
+							>
 								{isLoadingRound ? "Loading Round..." : "Refresh Round"}
 							</button>
 							<button
 								type="button"
-								onClick={handlePlaySnippet}
-								disabled={!isReady || !answerTrack || isPlaying || isLoadingRound}
+								onClick={handleSnippetButtonClick}
+								disabled={!isReady || !answerTrack || isLoadingRound}
 							>
-								{isPlaying ? "Playing..." : "Play Snippet"}
+								{isSnippetPlaying && activeTrackUri === answerTrack?.uri ? "Pause Snippet" : "Play Snippet"}
 							</button>
-							<button type="button" onClick={handleGoToResults} disabled={!canContinueToResults}>
+							<button 
+								type="button" 
+								onClick={handleGoToResults} 
+								disabled={!canContinueToResults}
+							>
 								View Results
 							</button>
 						</section>
@@ -310,6 +328,8 @@ function GuessTheSongContent() {
 									? "Spotify player is ready"
 									: "Preparing Spotify player..."}
 						</p>
+
+						<VolumeControl player={player} />
 
 						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
@@ -394,8 +414,6 @@ function GuessTheSongContent() {
 
 export default function GuessTheSongClient() {
 	return (
-		<SpotifyPlaybackProvider>
-			<GuessTheSongContent />
-		</SpotifyPlaybackProvider>
+		<GuessTheSongContent />
 	);
 }

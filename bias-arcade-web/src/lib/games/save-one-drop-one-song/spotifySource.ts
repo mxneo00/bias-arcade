@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { spotifyFetch } from "@/lib/spotify/client";
-import { RoundTrack } from "./types"
+import { SongA, SongB } from "./types";
 import { dedupeTracks } from "./helpers";
 
 type SpotifyArtist = { id?: string; name: string };
@@ -9,28 +9,27 @@ type SpotifyAlbum = { images?: SpotifyImage[] };
 type SpotifyArtistDetails = { id: string; genres?: string[] };
 
 type SpotifyTrack = {
-	id: string;
-	name: string;
-	uri: string;
-	duration_ms: number;
-	preview_url: string | null;
-	external_urls?: { spotify?: string; };
-	artists: SpotifyArtist[];
-	album?: SpotifyAlbum;
+    id: string;
+    name: string;
+    uri: string;
+    duration_ms: number;
+    external_urls?: { spotify?: string; };
+    artists: SpotifyArtist[];
+    artistIds: string[];
+    album?: SpotifyAlbum;
 };
 
 type SpotifyRecommendationsResponse = { tracks?: SpotifyTrack[]; };
 type SpotifySearchResponse = { tracks?: { items?: SpotifyTrack[]; }; };
 type SpotifyArtistsResponse = { artists?: SpotifyArtistDetails[]; };
 
-type CandidateTrack = RoundTrack & { artistIds: string[] };
+type CandidateTrack = (SongA | SongB) & { artistIds: string[] };
 
 const ALLOWED_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
     "kpop", "kpop", "korean pop", "korean rock",
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
     ];
-
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
     const normalized = Array.from(
@@ -49,10 +48,10 @@ function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] 
 }
 
 function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
-	if (!track.id || !track.uri || !track.name || !track.artists?.length) {
-		return null;
-	}
-
+    if (!track.id || !track.uri || !track.name || !track.artists?.length) {
+        return null;
+    }
+    
     const artistIds = track.artists.map((artist) => artist.id).filter((id): id is string => Boolean(id));
 
 	return {
@@ -61,15 +60,14 @@ function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
 		artists: track.artists.map((artist) => artist.name),
         artistIds,
 		uri: track.uri,
-		durationMs: track.duration_ms,
-		previewUrl: track.preview_url,
-		albumImageUrl: track.album?.images?.[0]?.url ?? null,
-		externalUrl: track.external_urls?.spotify ?? null,
+		duration_ms: track.duration_ms,
+        albumImageUrl: track.album?.images?.[0]?.url || null,
 	};
 }
 
 async function readBodySafe(response: Response) {
     try {
+        // Use a cloned response so diagnostics do not consume the original body.
         return await response.clone().text();
     } catch {
         return "";
@@ -127,10 +125,10 @@ async function fetchArtistGenresMap(request: NextRequest, artistIds: string[]): 
     return map;
 }
 
-async function prioritizeKoreanGenreTracks(
-    request: NextRequest,
+async function prioritizeKoreanTracks(
+    request: NextRequest, 
     tracks: CandidateTrack[],
-): Promise<RoundTrack[]> {
+): Promise<CandidateTrack[]> {
     if (tracks.length === 0) {
         return [];
     }
@@ -140,35 +138,34 @@ async function prioritizeKoreanGenreTracks(
         tracks.flatMap((track) => track.artistIds)
     );
 
-    const matched: RoundTrack[] = [];
-    const unmatched: RoundTrack[] = [];
+    const matched: CandidateTrack[] = [];
+    const unmatched: CandidateTrack[] = [];
 
     for (const track of tracks) {
-        const roundTrack: RoundTrack = {
+        const candidateTrack: CandidateTrack = {
             id: track.id,
             name: track.name,
             artists: track.artists,
+            artistIds: track.artistIds,
             uri: track.uri,
-            durationMs: track.durationMs,
-            previewUrl: track.previewUrl,
+            duration_ms: track.duration_ms,
             albumImageUrl: track.albumImageUrl,
-            externalUrl: track.externalUrl,
         };
 
         if (track.artistIds.length === 0) {
-            unmatched.push(roundTrack);
+            unmatched.push(candidateTrack);
             continue;
         }
 
         const isMatch = track.artistIds.some((artistId) => {
-            const genres = artistGenresMap.get(artistId) ?? [];
-            return genres.some((genre) => ALLOWED_SEED_GENRES.includes(genre.trim().toLowerCase()));
+            const genres = artistGenresMap.get(artistId);
+            return genres ? genres.some((genre) => ALLOWED_SEED_GENRES.includes(genre.trim().toLowerCase())) : false;
         });
 
         if (isMatch) {
-            matched.push(roundTrack);
+            matched.push(candidateTrack);
         } else {
-            unmatched.push(roundTrack);
+            unmatched.push(candidateTrack);
         }
     }
 
@@ -177,13 +174,12 @@ async function prioritizeKoreanGenreTracks(
 
 export async function fetchTrackBatch(
     request: NextRequest,
-    args: { 
-        market: string; 
+    args: { market: string; 
         seedGenres: string[]; 
         defaultSeedGenres: string[]; 
         variant?: string, 
-        limit: number}
-): Promise<RoundTrack[]> {
+        limit: number }
+): Promise<CandidateTrack[]> {
     const { market, limit, variant } = args;
     const seedGenres = sanitizeSeedGenres(args.seedGenres, args.defaultSeedGenres);
     const defaultSeedGenres = sanitizeSeedGenres(args.defaultSeedGenres, ["k-pop", "k-rock"]);
@@ -242,50 +238,33 @@ export async function fetchTrackBatch(
         });
     };
 
-    const doBroadSearch = async (lim: number) => {
-        const sp = new URLSearchParams({
-            q: "kpop korean idol",
-            type: "track",
-            market,
-            limit: String(lim),
-        });
-
-        return spotifyFetch(request, `/search?${sp.toString()}`, {
-            method: "GET",
-            cache: "no-store",
-        });
-    };
-
     const LIMIT_RETRY_FALLBACK = 10;
 
     let usedGenres = seedGenres;
     let recommendations: CandidateTrack[] = [];
     let searchTracks: CandidateTrack[] = [];
 
-    let response = await doRecs(seedGenres, limit);
-    if (!response.ok && seedGenres.join(',') != defaultSeedGenres.join(',')) {
-        response = await doRecs(defaultSeedGenres, limit);
+    let recRes = await doRecs(seedGenres, limit);
+    if (!recRes.ok && seedGenres.join(",") !== defaultSeedGenres.join(",")) {
+        recRes = await doRecs(defaultSeedGenres, limit);
         usedGenres = defaultSeedGenres;
     }
 
-    if (!response.ok) {
-        const body = await readBodySafe(response);
-        if (response.status === 400 && isInvalidLimitError(body)) {
-            response = await doRecs(usedGenres, LIMIT_RETRY_FALLBACK);
-        } else if (response.status === 429) {
-            const retryAfterSeconds = getRetryAfterSeconds(response);
+    if (!recRes.ok) {
+        const body = await readBodySafe(recRes);
+        if (recRes.status === 400 && isInvalidLimitError(body)) {
+            recRes = await doRecs(usedGenres, LIMIT_RETRY_FALLBACK);
+        } else if (recRes.status === 429) {
+            const retryAfterSeconds = getRetryAfterSeconds(recRes);
             throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
         }
     }
 
-    if (response.ok) {
-        const payload = (await response.json()) as SpotifyRecommendationsResponse;
+    if (recRes.ok) {
+        const payload = (await recRes.json()) as SpotifyRecommendationsResponse;
         recommendations = (payload.tracks ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
-        const prioritizedTracks = await prioritizeKoreanGenreTracks(request, recommendations);
-        return dedupeTracks(prioritizedTracks);
     }
 
-    // Fallback to search if recommendations fail
     let searchRes = await doSearch(usedGenres, limit);
     if (!searchRes.ok) {
         const body = await readBodySafe(searchRes);
@@ -296,38 +275,19 @@ export async function fetchTrackBatch(
             throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
         }
     }
-    
+
     if (searchRes.ok) {
         const payload = (await searchRes.json()) as SpotifySearchResponse;
         searchTracks = (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
     }
 
-    if (searchTracks.length === 0) {
-        // As a last resort, do a broad search without genre seeds
-        let broadSearchRes = await doBroadSearch(limit);
-        if (!broadSearchRes.ok) {
-            const body = await readBodySafe(broadSearchRes);
-            if (broadSearchRes.status === 400 && isInvalidLimitError(body)) {
-                broadSearchRes = await doBroadSearch(LIMIT_RETRY_FALLBACK);
-            } else if (broadSearchRes.status === 429) {
-                const retryAfterSeconds = getRetryAfterSeconds(broadSearchRes);
-                throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
-            }
-        }
-
-        if (broadSearchRes.ok) {
-            const payload = (await broadSearchRes.json()) as SpotifySearchResponse;
-            searchTracks = (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
-        }
-    }
-
-    const combined = [...recommendations, ...searchTracks];
+    const combined = dedupeTracks([...recommendations, ...searchTracks]) as CandidateTrack[];
     if (combined.length === 0) {
-        const recBody = await readBodySafe(response);
+        const recBody = await readBodySafe(recRes);
         const searchBody = await readBodySafe(searchRes);
-        const broadSearchBody = searchTracks.length === 0 ? await readBodySafe(await doBroadSearch(limit)) : "";
-        throw new Error(`Failed to fetch tracks from Spotify. Recs response: ${recBody}, Search response: ${searchBody}, Broad search response: ${broadSearchBody}`);
+        throw new Error(`Failed to fetch tracks. Recommendations response: ${recBody}, Search response: ${searchBody}`);
     }
-    const prioritizedTracks = await prioritizeKoreanGenreTracks(request, combined);
+
+    const prioritizedTracks = await prioritizeKoreanTracks(request, combined);
     return dedupeTracks(prioritizedTracks);
 }

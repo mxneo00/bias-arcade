@@ -8,12 +8,12 @@ export async function PUT(request: NextRequest) {
     }
 
     try {
-        const url = `/me/player/play?device_id=${encodeURIComponent(deviceId)}`;
+        const url = `/me/player`;
         const response = await spotifyFetch(request, url, {
             method: 'PUT',
             body: JSON.stringify({
                 device_ids: [deviceId],
-                play: true,
+                play: false,
             }),
         });
 

@@ -11,6 +11,11 @@ const games = [
         description: "Listen to a short Spotify clip and pick the correct title.",
         href: "/games/guess-the-song",
     },
+    {
+        title: "Save One Drop, One Song",
+        description: "Choose one to save and one to drop from a pair of Spotify songs.",
+        href: "/games/save-one-drop-one-song",
+    },
 ];
 
 export default async function GamesPage() {

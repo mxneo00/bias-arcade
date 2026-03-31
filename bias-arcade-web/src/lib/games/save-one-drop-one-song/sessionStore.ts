@@ -1,4 +1,4 @@
-import { GameSettings, RoundTrack } from "./types"
+import { GameSettings, SongA, SongB } from "./types";
 
 type GameSession = {
     id: string;
@@ -6,19 +6,19 @@ type GameSession = {
     variant: string;
     createdAt: number;
     updatedAt: number;
-    pool: RoundTrack[];
-    usedAnswers: Set<string>;
-    recentlyUsedIds: string[];
+    pool: (SongA | SongB)[];
     roundNumber: number;
+    recentlyUsedIds: string[];
 }
 
 const GAME_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 declare global {
-    var __guessTheSongSessions: Map<string, GameSession> | undefined;
+    var __saveOneDropOneSongSessions: Map<string, GameSession> | undefined;
 }
-const sessions = globalThis.__guessTheSongSessions ??= new Map<string, GameSession>();
-globalThis.__guessTheSongSessions = sessions;
+
+const sessions = globalThis.__saveOneDropOneSongSessions ??= new Map<string, GameSession>();
+globalThis.__saveOneDropOneSongSessions = sessions;
 
 function cleanUpSessions() {
     const now = Date.now();
@@ -42,11 +42,9 @@ export function createSession(settings: GameSettings): GameSession {
         createdAt: now,
         updatedAt: now,
         pool: [],
-        usedAnswers: new Set(),
         recentlyUsedIds: [],
-        roundNumber: 0
+        roundNumber: 0,
     };
-
     sessions.set(id, session);
     return session;
 }
@@ -59,7 +57,7 @@ export function getSession(gameId: string): GameSession | null {
         return null;
     }
     session.updatedAt = Date.now();
-    return session;
+    return session ?? null;
 }
 
 export function deleteSession(gameId: string): void {
