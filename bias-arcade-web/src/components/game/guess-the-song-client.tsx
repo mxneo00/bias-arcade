@@ -8,26 +8,13 @@ import {
 } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
+import type {
+	CreateGameResponse,
+	RoundPayload as RoundResponse,
+	RoundTrack,
+} from "@/lib/games/guess-the-song/types";
 
 import styles from "./page.module.css";
-
-type RoundTrack = {
-  id: string;
-  name: string;
-  artists: string[];
-  uri: string;
-  durationMs: number;
-};
-
-type RoundResponse = {
-  roundNumber: number;
-  answer: RoundTrack;
-  options: RoundTrack[];
-};
-
-type CreateGameResponse = {
-  gameId: string;
-};
 
 function GuessTheSongContent() {
 	const { 
@@ -58,7 +45,6 @@ function GuessTheSongContent() {
 	const [didSkipRound, setDidSkipRound] = useState(false);
 
 	const hasAnswered = selectedTrackId !== null;
-	const isCorrect = hasAnswered && selectedTrackId === answerTrackId;
 	const canContinueToResults = hasAnswered || didSkipRound;
 
 	async function createGameSession() {

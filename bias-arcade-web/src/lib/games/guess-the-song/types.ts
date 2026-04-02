@@ -20,3 +20,7 @@ export type RoundPayload = {
     answer: RoundTrack;
     options: RoundTrack[];
 }
+
+export type CreateGameResponse = {
+	gameId: string;
+};

@@ -8,36 +8,14 @@ import {
 } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
+import type {
+	CreateGameResponse,
+	GameRound as RoundResponse,
+	SongA,
+	SongB,
+} from "@/lib/games/save-one-drop-one-song/types";
 
 import styles from "./page.module.css";
-
-type SongA = {
-    id: string;
-    name: string;
-    artists: string[];
-    albumImageUrl: string | null;
-    uri: string;
-    duration_ms: number;
-}
-
-type SongB = {
-    id: string;
-    name: string;
-    artists: string[];
-    albumImageUrl: string | null;
-    uri: string;
-    duration_ms: number;
-}
-
-type RoundResponse = {
-    roundNumber: number;
-    songA: SongA;
-    songB: SongB;
-};
-
-type CreateGameResponse = {
-  gameId: string;
-};
 
 function SaveOneDropOneSongContent() {
     const {
