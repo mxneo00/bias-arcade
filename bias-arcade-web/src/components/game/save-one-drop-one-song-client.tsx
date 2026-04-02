@@ -4,52 +4,36 @@ import Link from "next/link";
 import { useState } from "react";
 
 import {
-	SpotifyPlaybackProvider,
 	useSpotifyPlayback,
 } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
+import type {
+	CreateGameResponse,
+	GameRound as RoundResponse,
+	SongA,
+	SongB,
+} from "@/lib/games/save-one-drop-one-song/types";
 
 import styles from "./page.module.css";
 
-type SongA = {
-    id: string;
-    name: string;
-    artists: string[];
-    albumImageUrl: string | null;
-    uri: string;
-    duration_ms: number;
-}
-
-type SongB = {
-    id: string;
-    name: string;
-    artists: string[];
-    albumImageUrl: string | null;
-    uri: string;
-    duration_ms: number;
-}
-
-type RoundResponse = {
-    roundNumber: number;
-    songA: SongA;
-    songB: SongB;
-};
-
-type CreateGameResponse = {
-  gameId: string;
-};
-
 function SaveOneDropOneSongContent() {
-    const { isReady, error: playbackError, player, playSnippet, resetPlayer } = useSpotifyPlayback();
-    const pointsPerSelection = 10;
+    const {
+        isReady,
+        error: playbackError,
+        player,
+        playSnippet,
+        pauseSnippet,
+        isSnippetPlaying,
+        activeTrackUri,
+    } = useSpotifyPlayback();
+    const pointsPerSelection = 5;
     
     const [gameId, setGameId] = useState<string | null>(null);
 
     const [currentPair, setCurrentPair] = useState<{ songA: SongA; songB: SongB } | null>(null);
     const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
     const [isLoadingRound, setIsLoadingRound] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [requireSpotifyReconnect, setRequireSpotifyReconnect] = useState(false);
     const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
@@ -137,15 +121,19 @@ function SaveOneDropOneSongContent() {
         }
     }
 
-    async function handlePlaySnippet(track: SongA | SongB) {
+    async function handleSnippetButtonClick(track: SongA | SongB) {
         if (!isReady || !player) {
             setErrorMessage("Spotify playback not ready. Please connect your Spotify account.");
             return;
         }
         setErrorMessage(null);
-        setIsPlaying(true);
 
         try {
+            if (isSnippetPlaying && activeTrackUri === track.uri) {
+                await pauseSnippet();
+                return;
+            }
+
             const snippetLength = 20 * 1000; // 10 seconds
             const maxStart = Math.max(0, track.duration_ms - snippetLength);
             const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
@@ -153,8 +141,6 @@ function SaveOneDropOneSongContent() {
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to play snippet";
             setErrorMessage(message);
-        } finally {
-            setIsPlaying(false);
         }
     }
 
@@ -162,7 +148,7 @@ function SaveOneDropOneSongContent() {
         if (isLoadingRound) return;
         setSelectedTrackId(trackId);
         
-        if (trackId === currentPair?.songA.id) {
+        if (trackId === currentPair?.songA.id || trackId === currentPair?.songB.id) {
             setScore((prev) => prev + pointsPerSelection);
         } else {
             setScore((prev) => Math.max(0, prev - pointsPerSelection));
@@ -204,7 +190,6 @@ function SaveOneDropOneSongContent() {
                 method: "DELETE",
                 cache: "no-store",
             });
-            await resetPlayer();
         }
 
         setView("setup");
@@ -270,13 +255,6 @@ function SaveOneDropOneSongContent() {
                         </div>
 
                         <section className={styles.controls}>
-                            <button 
-                                type="button" 
-                                onClick={() => loadRound()} 
-                                disabled={isLoadingRound}
-                            >
-                                {isLoadingRound ? "Loading Round..." : "Refresh Round"}
-                            </button>
                             <button
                                 type="button"
                                 onClick={handleGoToResults}
@@ -304,6 +282,10 @@ function SaveOneDropOneSongContent() {
 							</Link>
 						) : null}
 
+                        {isLoadingRound ? (
+                            <p className={styles.status}>Loading next round...</p>
+                        ) : null}
+
                         <section className={styles.songOptions}>
                             {currentPair ? (
                                 <>
@@ -312,21 +294,25 @@ function SaveOneDropOneSongContent() {
                                             type="button"
                                             className={styles.snippetButton}
                                             onClick={() => {
-                                                void handlePlaySnippet(currentPair.songA);
+                                                void handleSnippetButtonClick(currentPair.songA);
                                             }}
-                                            disabled={!isReady || isPlaying || isLoadingRound}
+                                            disabled={!isReady || isLoadingRound}
                                         >
-                                            {isPlaying ? "Playing..." : "Play Left Song"}
+                                            {isSnippetPlaying && activeTrackUri === currentPair.songA.uri
+                                                ? "Pause Left Song"
+                                                : "Play Left Song"}
                                         </button>
                                         <button
                                             type="button"
                                             className={styles.snippetButton}
                                             onClick={() => {
-                                                void handlePlaySnippet(currentPair.songB);
+                                                void handleSnippetButtonClick(currentPair.songB);
                                             }}
-                                            disabled={!isReady || isPlaying || isLoadingRound}
+                                            disabled={!isReady || isLoadingRound}
                                         >
-                                            {isPlaying ? "Playing..." : "Play Right Song"}
+                                            {isSnippetPlaying && activeTrackUri === currentPair.songB.uri
+                                                ? "Pause Right Song"
+                                                : "Play Right Song"}
                                         </button>
                                     </section>
 
@@ -398,8 +384,6 @@ function SaveOneDropOneSongContent() {
 
 export default function SaveOneDropOneSong() {
     return (
-        <SpotifyPlaybackProvider>
-            <SaveOneDropOneSongContent />
-        </SpotifyPlaybackProvider>
+        <SaveOneDropOneSongContent />
     );
 }

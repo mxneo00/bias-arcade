@@ -4,34 +4,28 @@ import Link from "next/link";
 import { useState } from "react";
 
 import {
-	SpotifyPlaybackProvider,
 	useSpotifyPlayback,
 } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
+import type {
+	CreateGameResponse,
+	RoundPayload as RoundResponse,
+	RoundTrack,
+} from "@/lib/games/guess-the-song/types";
 
 import styles from "./page.module.css";
 
-type RoundTrack = {
-  id: string;
-  name: string;
-  artists: string[];
-  uri: string;
-  durationMs: number;
-};
-
-type RoundResponse = {
-  roundNumber: number;
-  answer: RoundTrack;
-  options: RoundTrack[];
-};
-
-type CreateGameResponse = {
-  gameId: string;
-};
-
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, player, playSnippet, resetPlayer } = useSpotifyPlayback();
+	const { 
+		isReady, 
+		error: playbackError, 
+		player, 
+		playSnippet, 
+		pauseSnippet, 
+		isSnippetPlaying, 
+		activeTrackUri 
+	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -41,7 +35,7 @@ function GuessTheSongContent() {
 	const [answerTrackId, setAnswerTrackId] = useState<string | null>(null);
 	const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
-	const [isPlaying, setIsPlaying] = useState(false);
+
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [requiresSpotifyReconnect, setRequiresSpotifyReconnect] = useState(false);
 	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
@@ -51,7 +45,6 @@ function GuessTheSongContent() {
 	const [didSkipRound, setDidSkipRound] = useState(false);
 
 	const hasAnswered = selectedTrackId !== null;
-	const isCorrect = hasAnswered && selectedTrackId === answerTrackId;
 	const canContinueToResults = hasAnswered || didSkipRound;
 
 	async function createGameSession() {
@@ -115,7 +108,6 @@ function GuessTheSongContent() {
 			}
 
 			const data = (await response.json()) as RoundResponse;
-
 			setRoundNumber(data.roundNumber);
 			setOptions(data.options);
 			setAnswerTrack(data.answer);
@@ -136,15 +128,19 @@ function GuessTheSongContent() {
 		}
 	}
 
-	async function handlePlaySnippet() {
+	async function handleSnippetButtonClick() {
 		if (!answerTrack || !isReady) {
 			return;
 		}
 
-		setIsPlaying(true);
 		setErrorMessage(null);
 
 		try {
+			if (isSnippetPlaying && activeTrackUri === answerTrack.uri) {
+				await pauseSnippet();
+				return;
+			}
+
 			const snippetLength = 8000;
 			const maxStart = Math.max(0, answerTrack.durationMs - snippetLength);
 			const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
@@ -152,8 +148,6 @@ function GuessTheSongContent() {
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to play snippet";
 			setErrorMessage(message);
-		} finally {
-			setIsPlaying(false);
 		}
 	}
 
@@ -222,12 +216,6 @@ function GuessTheSongContent() {
 				method: "DELETE",
 				cache: "no-store",
 			});
-			try {
-				await resetPlayer();
-			} catch (error) {
-				// If resetting the player fails, we still want to end the game session, so we catch and ignore errors here.
-				console.error("Failed to reset Spotify player on game end:", error);
-			}
 		}
 
 		setView("setup");
@@ -305,10 +293,10 @@ function GuessTheSongContent() {
 							</button>
 							<button
 								type="button"
-								onClick={handlePlaySnippet}
-								disabled={!isReady || !answerTrack || isPlaying || isLoadingRound}
+								onClick={handleSnippetButtonClick}
+								disabled={!isReady || !answerTrack || isLoadingRound}
 							>
-								{isPlaying ? "Playing..." : "Play Snippet"}
+								{isSnippetPlaying && activeTrackUri === answerTrack?.uri ? "Pause Snippet" : "Play Snippet"}
 							</button>
 							<button 
 								type="button" 
@@ -412,8 +400,6 @@ function GuessTheSongContent() {
 
 export default function GuessTheSongClient() {
 	return (
-		<SpotifyPlaybackProvider>
-			<GuessTheSongContent />
-		</SpotifyPlaybackProvider>
+		<GuessTheSongContent />
 	);
 }

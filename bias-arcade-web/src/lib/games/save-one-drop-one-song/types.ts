@@ -31,3 +31,7 @@ export type GameRound = {
     songA: SongA;
     songB: SongB;
 }
+
+export type CreateGameResponse = {
+    gameId: string;
+};
