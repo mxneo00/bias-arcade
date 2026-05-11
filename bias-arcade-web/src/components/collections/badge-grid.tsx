@@ -18,13 +18,13 @@ export function BadgeGrid() {
 		try {
 			const response = await fetch("/api/collections");
 			const data = await response.json();
-			setCollection(data.collectionItems);
-			setClaimedBadges(data.claimedBadges);
+			setCollection(Array.isArray(data.collectionItems) ? data.collectionItems : []);
+			setClaimedBadges(Array.isArray(data.claimedBadges) ? data.claimedBadges : []);
 		} catch (error) {
 			console.error("Error fetching collection data:", error);
 		} finally {
 			setLoading(false);
-		}	
+		}   
 	};
 
 	const handleClaim = async (badgeId: string) => {
@@ -44,6 +44,11 @@ export function BadgeGrid() {
 
 	if (loading) {
 		return <p>Loading collection...</p>;
+	}
+
+	// Defensive: prevent runtime error if collection is undefined/null
+	if (!Array.isArray(collection)) {
+		return <p>No collection data available.</p>;
 	}
 
 	return (

@@ -24,12 +24,13 @@ export function ProgressPanel() {
         try {
             const response = await fetch("/api/collections/progress");
             const data = await response.json();
-            const items = data.collectionItems;
+            const items = Array.isArray(data.collectionItems) ? data.collectionItems : [];
+            const claimedBadges = Array.isArray(data.claimedBadges) ? data.claimedBadges : [];
 
             setProgress({
                 totalBadges: items.length,
-                unlockedBadges: items.filter((item: any) => item.badge.status === "unlocked").length,
-                claimedBadges: data.claimedBadges.length,
+                unlockedBadges: items.filter((item: any) => item.badge && item.badge.status === "unlocked").length,
+                claimedBadges: claimedBadges.length,
             });
         } catch (error) {
             console.error("Error fetching progress data:", error);
