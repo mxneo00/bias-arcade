@@ -1,16 +1,26 @@
 import styles from "./page.module.css";
+import { CollectionItem } from "@/lib/collections/types";
 
 type BadgeCardProps = {
-	title: string;
-	description: string;
+	item: CollectionItem;
+	onClaim?: (badgeId: string) => void;
 };
 
-export function BadgeCard({ title, description }: BadgeCardProps) {
+export function BadgeCard({ item, onClaim }: BadgeCardProps) {
+	const { badge, dateUnlocked, dateClaimed } = item;
+	const isClaimed = badge.status === "claimed";
+	const isUnlocked = badge.status === "unlocked";
+
 	return (
-		<article className={styles.card}>
-			<h2>{title}</h2>
-			<p>{description}</p>
-			<span className={styles.badge}>Template Placeholder</span>
+		<article className={`${styles.card} ${styles[badge.status]}`}>
+			<img src={badge.imageUrl} alt={badge.name} />
+			<h2>{badge.name}</h2>
+			<p>{badge.description}</p>
+			{isUnlocked && !isClaimed && (
+				<button onClick={() => onClaim?.(badge.id)}>Claim</button>
+			)}
+			{isClaimed && <p>Claimed on: {new Date(dateClaimed!).toLocaleDateString()}</p>}
+			{!isUnlocked && <p>Locked</p>}
 		</article>
 	);
 }

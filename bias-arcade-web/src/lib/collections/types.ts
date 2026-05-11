@@ -1,3 +1,10 @@
+export type UserCollectionDoc = {
+    userId: string;
+    stats: UserStats;
+    claimedBadges: string[]; // Array of badge IDs that the user has claimed
+    updatedAt: string; // ISO date string
+}
+
 export type Status = "locked" | "unlocked" | "claimed";
 
 export type Badge = {
