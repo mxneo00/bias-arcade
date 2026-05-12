@@ -3,17 +3,17 @@ import { UnlockRule } from '../collections/types';
 export const unlockRules: UnlockRule[] = [
     // Game Related Unlock Rules
     {
-        id: "play_1st_game",
+        id: "first_game",
         description: "Play your first game",
         isMet: (stats) => stats.totalGamesPlayed >= 1,
     },
     {
-        id:"play_guess_the_song",
+        id:"guess_the_song",
         description: "Play the 'Guess the Song' game",
         isMet: (stats) => stats.gameHistory.some(game => game.gameId === "guess_the_song"),
     },
     {
-        id: "play_save_one_drop_one",
+        id: "save_one_drop_one",
         description: "Play the 'Save One, Drop One' game",
         isMet: (stats) => stats.gameHistory.some(game => game.gameId === "save_one_drop_one"),
     },

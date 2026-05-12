@@ -19,7 +19,13 @@ export function BadgeCard({ item, onClaim }: BadgeCardProps) {
 			{isUnlocked && !isClaimed && (
 				<button onClick={() => onClaim?.(badge.id)}>Claim</button>
 			)}
-			{isClaimed && <p>Claimed on: {new Date(dateClaimed!).toLocaleDateString()}</p>}
+			{isClaimed && (
+				<p>
+					{dateClaimed
+						? `Claimed on: ${new Date(dateClaimed).toLocaleDateString()}`
+						: "Claimed"}
+				</p>
+			)}
 			{!isUnlocked && <p>Locked</p>}
 		</article>
 	);

@@ -39,12 +39,13 @@ export async function GET() {
             longestStreak: 0,
             gameHistory: [],
         };
-        const evaluatedCollection = evaluateCollection(stats);
+        const claimedBadges = Array.isArray(data?.claimedBadges) ? data.claimedBadges : [];
+        const evaluatedCollection = evaluateCollection(stats, claimedBadges);
 
         return NextResponse.json({
             stats,
             collectionItems: evaluatedCollection,
-            claimedBadges: data?.claimedBadges || [],
+            claimedBadges,
         });
     } catch (error) {
         console.error("Error fetching collection data:", error);

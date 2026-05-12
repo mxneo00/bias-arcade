@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 
 export function BadgeGrid() {
 	const [collection, setCollection] = useState<CollectionItem[]>([]);
-	const [claimedBadges, setClaimedBadges] = useState<string[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -19,7 +18,6 @@ export function BadgeGrid() {
 			const response = await fetch("/api/collections");
 			const data = await response.json();
 			setCollection(Array.isArray(data.collectionItems) ? data.collectionItems : []);
-			setClaimedBadges(Array.isArray(data.claimedBadges) ? data.claimedBadges : []);
 		} catch (error) {
 			console.error("Error fetching collection data:", error);
 		} finally {
@@ -31,11 +29,22 @@ export function BadgeGrid() {
 		try {
 			const response = await fetch("/api/collections", {
 				method: "POST",
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ badgeId }),
 			});
 
 			if (response.ok) {
-				setClaimedBadges([...claimedBadges, badgeId]);
+				setCollection((prev) =>
+					prev.map((item) =>
+						item.badge.id === badgeId
+							? {
+								...item,
+								badge: { ...item.badge, status: "claimed" },
+								dateClaimed: new Date().toISOString(),
+							}
+							: item
+					)
+				);
 			}
 		} catch (error) {
 			console.error("Error claiming badge:", error);
