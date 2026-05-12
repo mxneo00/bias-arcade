@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth";
-import { firebaseDb } from "../../../config/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { adminDb } from "@/server/firebase-admin";
 import { evaluateCollection } from "@/lib/collections/evaluate";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -13,10 +12,10 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const collectionDocRef = doc(firebaseDb, "users", session.user.id);
-        const collectionSnap = await getDoc(collectionDocRef);
+        const collectionDocRef = adminDb.collection("users").doc(session.user.id);
+        const collectionSnap = await collectionDocRef.get();
 
-        if (!collectionSnap.exists()) {
+        if (!collectionSnap.exists) {
             return NextResponse.json({
                 stats: {
                     totalGamesPlayed: 0,
@@ -32,12 +31,20 @@ export async function GET(request: NextRequest) {
         }
 
         const data = collectionSnap.data();
-        const evaluatedCollection = evaluateCollection(data.stats);
+        const stats = data?.stats ?? {
+            totalGamesPlayed: 0,
+            averageScore: 0,
+            highestScore: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            gameHistory: [],
+        };
+        const evaluatedCollection = evaluateCollection(stats);
 
         return NextResponse.json({
-            stats: data.stats,
+            stats,
             collectionItems: evaluatedCollection,
-            claimedBadges: data.claimedBadges || [],
+            claimedBadges: data?.claimedBadges || [],
         });
     } catch (error) {
         console.error("Error fetching collection data:", error);
@@ -45,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -55,15 +62,15 @@ export async function POST(request: NextRequest) {
     try {
         const { badgeId } = await request.json();
 
-        const collectionDocRef = doc(firebaseDb, "users", session.user.id);
-        const collectionSnap = await getDoc(collectionDocRef);
+        const collectionDocRef = adminDb.collection("users").doc(session.user.id);
+        const collectionSnap = await collectionDocRef.get();
 
-        if (!collectionSnap.exists()) {
+        if (!collectionSnap.exists) {
             return NextResponse.json({ error: "Collection not found" }, { status: 404 });
         }
 
         const data = collectionSnap.data();
-        const claimedBadges = data.claimedBadges || [];
+        const claimedBadges = data?.claimedBadges || [];
 
         if (claimedBadges.includes(badgeId)) {
             return NextResponse.json({ error: "Badge already claimed" }, { status: 400 });
@@ -71,7 +78,7 @@ export async function POST(request: NextRequest) {
 
         claimedBadges.push(badgeId);
         
-        await updateDoc(collectionDocRef, { 
+        await collectionDocRef.update({ 
             claimedBadges, 
             updatedAt: new Date().toISOString()
         });

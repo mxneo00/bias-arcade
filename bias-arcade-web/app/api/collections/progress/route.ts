@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth";
-import { firebaseDb } from "../../../../config/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { adminDb } from "@/server/firebase-admin";
 import { evaluateCollection } from "@/lib/collections/evaluate";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
@@ -13,10 +12,10 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const collectionDocRef = doc(firebaseDb, "users", session.user.id);
-        const collectionSnap = await getDoc(collectionDocRef);
+        const collectionDocRef = adminDb.collection("users").doc(session.user.id);
+        const collectionSnap = await collectionDocRef.get();
 
-        if (!collectionSnap.exists()) {
+        if (!collectionSnap.exists) {
             return NextResponse.json({
                 collectionItems: [],
                 claimedBadges: [],
@@ -24,13 +23,22 @@ export async function GET(request: NextRequest) {
         }
 
         const data = collectionSnap.data();
-        const evaluatedCollection = evaluateCollection(data.stats);
+        const stats = data?.stats ?? {
+            totalGamesPlayed: 0,
+            averageScore: 0,
+            highestScore: 0,
+            currentStreak: 0,
+            longestStreak: 0,
+            gameHistory: [],
+        };
+        const evaluatedCollection = evaluateCollection(stats);
 
         return NextResponse.json({
             collectionItems: evaluatedCollection,
-            claimedBadges: data.claimedBadges || [],
+            claimedBadges: data?.claimedBadges || [],
         });
     } catch (error) {
+        console.error("Error fetching collection progress:", error);
         return NextResponse.json({ error: "Failed to fetch progress" }, { status: 500 });
     }
 }
