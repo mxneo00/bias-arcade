@@ -212,7 +212,7 @@ function GuessTheSongContent() {
 
 	async function handleEndGame() {
 		if (gameId) {
-			void fetch(`/api/games/guess-the-song/${gameId}`, {
+			void fetch(`/api/games/guess-the-song/game?gameId=${encodeURIComponent(gameId)}`, {
 				method: "DELETE",
 				cache: "no-store",
 			});
