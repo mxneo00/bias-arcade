@@ -189,6 +189,10 @@ function SaveOneDropOneSongContent() {
             void fetch(`/api/games/save-one-drop-one-song/game?gameId=${encodeURIComponent(gameId)}`, {
                 method: "DELETE",
                 cache: "no-store",
+                headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					score,
+				}),
             });
         }
 
