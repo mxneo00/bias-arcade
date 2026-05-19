@@ -1,28 +1,28 @@
-import { firebaseDb } from "../../../config/firebase";
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import "server-only";
+import { adminDb } from "@/server/firebase-admin";
 import { UserStats, GameStats } from "./types";
 
-export async function updateUserStats(
-    userId: string, 
-    gameData: { gameId: string; score: number; streak: number }
-) {
-    const collectionDocRef = doc(firebaseDb, "users", userId);
-    const collectionSnap = await getDoc(collectionDocRef);
+type GameUpdateData = {
+    gameId: string;
+    score: number;
+    streak: number;
+};
 
-    let stats: UserStats;
+const defaultStats: UserStats = {
+    totalGamesPlayed: 0,
+    averageScore: 0,
+    highestScore: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    gameHistory: [],
+};
 
-    if (collectionSnap.exists()) {
-        stats = collectionSnap.data().stats;
-    } else {
-        stats = {
-            totalGamesPlayed: 0,
-            averageScore: 0,
-            highestScore: 0,
-            currentStreak: 0,
-            longestStreak: 0,
-            gameHistory: [],
-        };
-    }
+export async function updateUserStats(userId: string, gameData: GameUpdateData) {
+    const userDocRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userDocRef.get();
+
+    const data = userSnap.data();
+    const stats: UserStats = data?.stats ?? defaultStats;
 
     const newGameStats: GameStats = {
         gameId: gameData.gameId,
@@ -31,26 +31,26 @@ export async function updateUserStats(
         streak: gameData.streak,
     };
 
-    stats.gameHistory.push(newGameStats);
-    stats.totalGamesPlayed += 1;
-    stats.averageScore = 
-        (stats.averageScore * (stats.totalGamesPlayed - 1) + gameData.score) / stats.totalGamesPlayed;
-    stats.highestScore = Math.max(stats.highestScore, gameData.score);
-    stats.currentStreak = gameData.streak;
-    stats.longestStreak = Math.max(stats.longestStreak, gameData.streak);
+    const nextHistory = [...stats.gameHistory, newGameStats];
+    const totalGamesPlayed = stats.totalGamesPlayed + 1;
+    const averageScore = (stats.averageScore * stats.totalGamesPlayed + gameData.score) / totalGamesPlayed;
+    const highestScore = Math.max(stats.highestScore, gameData.score);
+    const currentStreak = gameData.streak;
+    const longestStreak = Math.max(stats.longestStreak, currentStreak);
 
-    const collectionData = collectionSnap.exists()
-        ? { ...collectionSnap.data(), stats }
-        : { userId, stats, claimedBadges: [], updatedAt: new Date().toISOString() };
-    
-    if (collectionSnap.exists()) {
-        await updateDoc(collectionDocRef, { stats, updatedAt: new Date().toISOString() });
-    } else {
-        await setDoc(collectionDocRef, {
-            userId,
-            stats,
-            claimedBadges: [],
-            updatedAt: new Date().toISOString(),
-        });
+    const nextStats: UserStats = {
+        totalGamesPlayed,
+        averageScore,
+        highestScore,
+        currentStreak,
+        longestStreak,
+        gameHistory: nextHistory,
+    };
+
+    if (userSnap.exists) {
+        await userDocRef.update({ stats: nextStats, updatedAt: new Date().toISOString() });
+        return;
     }
+
+    await userDocRef.set({ stats: nextStats, claimedBadges: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
 }

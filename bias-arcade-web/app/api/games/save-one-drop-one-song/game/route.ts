@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, deleteSession } from "@/lib/games/save-one-drop-one-song/sessionStore"
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/server/auth";
+import { updateUserStats } from "@/lib/collections/updateStats";
 
 const DEFAULT_MARKET = "KR";
 const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
@@ -31,13 +34,28 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const gameId = searchParams.get("gameId");
-    if (!gameId) {
-        console.warn("DELETE /game/round missing gameId");
-        return NextResponse.json({ error: "Missing gameId" }, { status: 400 });
-    }
-
-    await deleteSession(gameId);
-    return NextResponse.json({ success: true });
+    const session = await getServerSession(authOptions);
+    
+        if (!session || !session.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+    
+        const { searchParams } = new URL(request.url);
+        const gameId = searchParams.get("gameId");
+        if (!gameId) {
+            return NextResponse.json({ error: "Missing gameId" }, { status: 400 });
+        }
+    
+        const body = (await request.json().catch(() => ({}))) as Partial<{
+            score: number;
+            streak: number;
+        }>;
+    
+        const score = Number(body.score ?? 0);
+        const streak = Number(body.streak ?? 0);
+    
+        await updateUserStats(session.user.id, { gameId: "save_one_drop_one_song", score, streak });
+    
+        await deleteSession(gameId);
+        return NextResponse.json({ success: true });
 }
