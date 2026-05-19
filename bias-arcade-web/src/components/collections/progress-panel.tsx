@@ -26,10 +26,10 @@ export function ProgressPanel() {
             const data = await response.json();
             const items = Array.isArray(data.collectionItems) ? data.collectionItems : [];
             const claimedBadges = Array.isArray(data.claimedBadges) ? data.claimedBadges : [];
-
+            const progressEligible = items.filter((item: any) => item.badge && (item.badge.status === "unlocked" || item.badge.status === "claimed"));
             setProgress({
                 totalBadges: items.length,
-                unlockedBadges: items.filter((item: any) => item.badge && item.badge.status === "unlocked").length,
+                unlockedBadges: progressEligible.length,
                 claimedBadges: claimedBadges.length,
             });
         } catch (error) {

@@ -9,9 +9,29 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { getSpotifyConnectionStatus } from '@/lib/spotify/status';
 import { authOptions } from '@/server/auth';
 
+import { adminDb } from "@/server/firebase-admin";
+import { evaluateCollection } from "@/lib/collections/evaluate";
+import type { UserStats } from "@/lib/collections/types";
+
 
 export default async function Profile() {
+    const emptyStats: UserStats = {
+        totalGamesPlayed: 0,
+        averageScore: 0,
+        highestScore: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+        gameHistory: [],
+    };
     const session = await getServerSession(authOptions);
+    const userDocRef = adminDb.collection("users").doc(session.user.id);
+    const userDocSnap = await userDocRef.get();
+    const userData = userDocSnap.data();
+    const stats: UserStats = (userData?.stats as UserStats | undefined) || emptyStats;
+    const claimedBadges = Array.isArray(userData?.claimedBadges) ? userData.claimedBadges : [];
+    const totalScore = stats.gameHistory.reduce((sum, game) => sum + game.score, 0);
+    const collectionItems = evaluateCollection(stats, claimedBadges);
+    const unlockedOrClaimed = collectionItems.filter(item => item.badge.status === "unlocked" || item.badge.status === "claimed").length;   
 
     if (!session?.user) {
         redirect('/login?callbackUrl=/profile');
@@ -48,9 +68,12 @@ export default async function Profile() {
                         <div className={styles.placeholderBlock}>
                             <p className={styles.placeholderLabel}>Stats Summary</p>
                             <ul className={styles.statsList}>
-                                <li>Games played: --</li>
-                                <li>Highest streak: --</li>
-                                <li>Total score: --</li>
+                                <li>Games played: {stats.totalGamesPlayed}</li>
+                                <li>Highest streak: {stats.longestStreak}</li>
+                                <li>Total score: {totalScore}</li>
+                                <li>Average score: {Math.round(stats.averageScore)}</li>
+                                <li>Badges claimed: {claimedBadges.length}/{collectionItems.length}</li>
+                                <li>Badges unlocked: {unlockedOrClaimed}</li>
                             </ul>
                         </div>
                     </section>
