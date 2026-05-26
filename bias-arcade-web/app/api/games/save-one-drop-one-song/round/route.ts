@@ -41,50 +41,56 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    for (
-      let attempt = 0;
-      attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
-      attempt += 1
-    ) {
-      const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
-        market: session.settings.market,
-        seedGenres: session.settings.seedGenres,
-        limit: REFILL_BATCH,
-        defaultSeedGenres: DEFAULT_SEED_GENRES,
-      });
-    
-      const poolIds = new Set(session.pool.map((t) => t.id));
-      const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id)
-      );
+    if (session.maxRounds > 0 && session.roundNumber >= session.maxRounds) {
+      return NextResponse.json({ error: "Maximum rounds reached" }, { status: 400 });
+    }
+    if (session.settings.scope.type === "all-kpop") {
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+        attempt += 1
+      ) {
+        const batch = await fetchTrackBatch(request, {
+          variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
+          market: session.settings.market,
+          seedGenres: session.settings.seedGenres,
+          limit: REFILL_BATCH,
+          defaultSeedGenres: DEFAULT_SEED_GENRES,
+        });
+      
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id)
+        );
 
-      session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+      }
+
+      let fresh = getFresh(session);
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
+        attempt += 1
+      ) {
+        const batch = await fetchTrackBatch(request, {
+          variant: `${session.variant}:${session.roundNumber}:fresh:${attempt}`,
+          market: session.settings.market,
+          seedGenres: session.settings.seedGenres,
+          limit: REFILL_BATCH,
+          defaultSeedGenres: DEFAULT_SEED_GENRES,
+        });
+
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id)
+        );
+
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        fresh = getFresh(session);
+      }
     }
 
-    let fresh = getFresh(session);
-    for (
-      let attempt = 0;
-      attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
-      attempt += 1
-    ) {
-      const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:fresh:${attempt}`,
-        market: session.settings.market,
-        seedGenres: session.settings.seedGenres,
-        limit: REFILL_BATCH,
-        defaultSeedGenres: DEFAULT_SEED_GENRES,
-      });
-
-      const poolIds = new Set(session.pool.map((t) => t.id));
-      const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id)
-      );
-
-      session.pool = dedupeTracks([...session.pool, ...toAdd]);
-      fresh = getFresh(session);
-    }
-
+    const fresh = getFresh(session);
     let candidates = fresh;
     let usedFallback = false;
 

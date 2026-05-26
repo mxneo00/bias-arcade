@@ -48,28 +48,34 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const optionsCount = session.settings.optionsCount;
-    for (
-      let attempt = 0;
-      attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
-      attempt += 1
-    ) {
-      const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
-        market: session.settings.market,
-        seedGenres: session.settings.seedGenres,
-        limit: REFILL_BATCH,
-        defaultSeedGenres: DEFAULT_SEED_GENRES,
-      });
-
-      const poolIds = new Set(session.pool.map((t) => t.id));
-      const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id) && !session.usedAnswers.has(t.id)
-      );
-
-      session.pool = dedupeTracks([...session.pool, ...toAdd]);
-      if (getFresh(session).length >= optionsCount) break;
+    if (session.maxRounds > 0 && session.roundNumber >= session.maxRounds) {
+      return NextResponse.json({ error: "Maximum rounds reached" }, { status: 400 });
     }
+    const optionsCount = session.settings.optionsCount;
+    if (session.settings.scope.type === "all-kpop") {
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+        attempt += 1
+      ) {
+        const batch = await fetchTrackBatch(request, {
+          variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
+          market: session.settings.market,
+          seedGenres: session.settings.seedGenres,
+          limit: REFILL_BATCH,
+          defaultSeedGenres: DEFAULT_SEED_GENRES,
+        });
+
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id) && !session.usedAnswers.has(t.id)
+        );
+
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        if (getFresh(session).length >= optionsCount) break;
+      }
+    }
+    
     let fresh = getFresh(session);
     let usedFallback = false;
 

@@ -9,6 +9,7 @@ type GameSession = {
     pool: (SongA | SongB)[];
     roundNumber: number;
     recentlyUsedIds: string[];
+    maxRounds: number;
 }
 
 const GAME_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -44,6 +45,7 @@ export function createSession(settings: GameSettings): GameSession {
         pool: [],
         recentlyUsedIds: [],
         roundNumber: 0,
+        maxRounds: 0,
     };
     sessions.set(id, session);
     return session;

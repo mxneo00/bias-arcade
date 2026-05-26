@@ -25,11 +25,15 @@ type SpotifyArtistsResponse = { artists?: SpotifyArtistDetails[]; };
 
 type CandidateTrack = RoundTrack & { artistIds: string[] };
 
+type SpotifySimplifiedAlbum = { id: string; images: SpotifyImage[]; };
+type SpotifyArtistAlbumsResponse = { items: SpotifySimplifiedAlbum[]; next: string | null; };
+type SpotifyAlbumTracksResponse = { items: SpotifyTrack[]; next: string | null; };
+
 const ALLOWED_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
     "kpop", "kpop", "korean pop", "korean rock",
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
-    ];
+];
 
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
@@ -330,4 +334,117 @@ export async function fetchTrackBatch(
     }
     const prioritizedTracks = await prioritizeKoreanGenreTracks(request, combined);
     return dedupeTracks(prioritizedTracks);
+}
+
+async function fetchAlbumsForArtist(
+    request: NextRequest,
+    artistId: string,
+    market: string,
+    maxAlbums = 100
+): Promise<SpotifySimplifiedAlbum[]> {
+    const albums: SpotifySimplifiedAlbum[] = [];
+    let offset = 0;
+    const limit = 50;
+
+    while (albums.length < maxAlbums) {
+        const sp = new URLSearchParams({
+            include_groups: "album,single",
+            market,
+            limit: String(limit),
+            offset: String(offset),
+        });
+
+        const response = await spotifyFetch(request, `/artists/${artistId}/albums?${sp.toString()}`, {
+            method: "GET",
+            cache: "no-store",
+        });
+
+        if (!response.ok) {
+            const body = await readBodySafe(response);
+            if (response.status === 429) {
+                const retryAfterSeconds = getRetryAfterSeconds(response);
+                throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
+            }
+            throw new Error(`Failed to fetch albums for artist ${artistId}. Status: ${response.status}, Body: ${body}`);
+        }
+
+        const payload = (await response.json()) as SpotifyArtistAlbumsResponse;
+        const items = payload.items ?? [];
+        albums.push(...items);
+
+        if (!payload.next || items.length === 0) {
+            break;
+        }
+        offset += items.length;
+    }
+    return albums.slice(0, maxAlbums);
+}
+
+async function fetchTracksForAlbum(
+    request: NextRequest,
+    album: SpotifySimplifiedAlbum,
+    market: string
+): Promise<CandidateTrack[]> {
+    const tracks: CandidateTrack[] = [];
+    let offset = 0;
+    const limit = 50;
+
+    while (true) {
+        const sp = new URLSearchParams({
+            market,
+            limit: String(limit),
+            offset: String(offset),
+        });
+        const response = await spotifyFetch(request, `/albums/${album.id}/tracks?${sp.toString()}`, {
+            method: "GET",
+            cache: "no-store",
+        });
+
+        if (!response.ok) {
+            const body = await readBodySafe(response);
+            if (response.status === 429) {
+                const retryAfterSeconds = getRetryAfterSeconds(response);
+                throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
+            }
+            throw new Error(`Failed to fetch tracks for album ${album.id}. Status: ${response.status}, Body: ${body}`);
+        }
+
+        const payload = (await response.json()) as SpotifyAlbumTracksResponse;
+        const items = payload.items ?? [];
+        
+        for (const track of items) {
+            const normalized = normalizeTrack({ ...track, album: { images: album.images } });
+            if (normalized) {
+                tracks.push(normalized);
+            }
+        }
+        if (!payload.next || items.length === 0) {
+            break;
+        }
+        offset += items.length;
+    }
+    return tracks;
+}
+
+export async function fetchArtistDiscography(
+    request: NextRequest,
+    artistIds: string[],
+    market: string
+): Promise<RoundTrack[]> {
+    const validIds = artistIds.filter(Boolean);
+    if (validIds.length === 0) {
+        return [];
+    }
+
+    const allTracks: CandidateTrack[] = [];
+
+    for (const artistId of validIds) {
+        const albums = await fetchAlbumsForArtist(request, artistId, market);
+        for (const album of albums) {
+            const tracks = await fetchTracksForAlbum(request, album, market);
+            allTracks.push(...tracks);
+        }
+    }
+
+    return dedupeTracks(allTracks);
 }
