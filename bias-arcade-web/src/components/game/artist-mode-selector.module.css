@@ -1,0 +1,245 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--foreground, #fff);
+  border-radius: 12px;
+  padding: 28px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal h2 {
+  margin: 0 0 20px;
+  font-size: 24px;
+  color: var(--text-primary, #000);
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.sectionLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary, #000);
+  font-size: 14px;
+}
+
+.selectionDisplay {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--button-secondary-border, #ddd);
+  border-radius: 8px;
+  background: #f9f9f9;
+  margin-bottom: 12px;
+}
+
+.selectionDisplay span {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary, #000);
+}
+
+.searchToggle {
+  padding: 6px 12px;
+  border: 1px solid var(--button-secondary-border, #ddd);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.searchToggle:hover {
+  background: var(--button-secondary-hover, #f2f2f2);
+}
+
+.dropdown {
+  border: 1px solid var(--button-secondary-border, #ddd);
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdownItem {
+  padding: 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary, #000);
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--button-secondary-border, #eee);
+}
+
+.dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownItem:hover {
+  background: var(--button-secondary-hover, #f2f2f2);
+}
+
+.dropdownItem.active {
+  background: #e3f2fd;
+  font-weight: 600;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--button-secondary-border, #ddd);
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary, #000);
+}
+
+.radioLabel input[type="radio"] {
+  cursor: pointer;
+}
+
+.roundsPreview {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f0f8ff;
+  color: var(--text-primary, #000);
+  font-weight: 500;
+  font-size: 14px;
+  text-align: center;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--button-secondary-border, #ddd);
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #1db954;
+}
+
+.searchResultsList {
+  border: 1px solid var(--button-secondary-border, #ddd);
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.searchResultItem {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-bottom: 1px solid var(--button-secondary-border, #eee);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary, #000);
+  transition: background 0.15s;
+}
+
+.searchResultItem:last-child {
+  border-bottom: none;
+}
+
+.searchResultItem:hover {
+  background: var(--button-secondary-hover, #f2f2f2);
+}
+
+.noResults {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-size: 14px;
+}
+
+.loading {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+}
+
+.error {
+  padding: 12px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancelBtn,
+.confirmBtn {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--button-secondary-border, #ccc);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancelBtn {
+  background: transparent;
+  color: var(--text-primary, #000);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: var(--button-secondary-hover, #f2f2f2);
+}
+
+.confirmBtn {
+  background: #1db954;
+  color: white;
+  border-color: #1db954;
+}
+
+.confirmBtn:hover:not(:disabled) {
+  background: #1ed760;
+}
+
+.confirmBtn:disabled,
+.cancelBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
