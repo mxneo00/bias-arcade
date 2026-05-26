@@ -4,6 +4,8 @@ type ArtistRegistry = {
     label: string;
     type: "solo" | "group";
     memberSpotifyArtistIds: string[] | null;
+    subunits?: string[] | null;
+    family?: string | null;
     aliases?: string[] | null;
 };
 
@@ -74,8 +76,8 @@ export const artistRegistry: ArtistRegistry[] = [
             "3MZLSgcd5kOdhrZasDMecx", // Hongjoong
             "3TkRPyC9kz1wSRIkzUfVgL", // Seonghwa
             "0rFEZFoYNIa37Ad40mCuDq", // Yunho
-            "",                         // Yeosang
-            "",                         // San
+            "",                         // Yeosang N/A
+            "",                         // San N/A
             "3ZHodgUsqkIUsek6ke65bO", // Mingi
             "5in2h2c2DWNHKzgZo9OnVO", // Wooyoung
             "5gecqU5FZgxVdz1AtLumT0"  // Jongho
@@ -145,12 +147,12 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "ENHYPEN",
         type: "group",
         memberSpotifyArtistIds: [
-            "7EdcoPac2uNwICfR9glXLF", // Jungwon
+            "", // Jungwon N/A
             "6dNavn0Wr11k0fRVlbEi3D", // Heeseung
             "1dxyDekkPqYVKpC7iW71zJ", // Jay
-            "",                         // Jake
-            "",                         // Sunghoon
-            "",                         // Sunoo
+            "",                         // Jake N/A
+            "",                         // Sunghoon N/A
+            "",                         // Sunoo N/A
             ""                          // Ni-ki
         ]
     },
@@ -169,7 +171,7 @@ export const artistRegistry: ArtistRegistry[] = [
             "6jV25rzTKQ2zMgrqHha1V5", // Chanyeol
             "2CQZr2RPZmrcvDnaod1ldC", // D.O.
             "6iVo62B0bdTknRcrktCmak", // Kai
-            ""                          // Sehun
+            ""                          // Sehun N/A
         ]
     },
     // f(x)
@@ -179,8 +181,8 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "f(x)",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // Victoria
-            "",                         // Amber
+            "",                         // Victoria N/A
+            "",                         // Amber N/A
             "56HZvtrzD82YKMGGJTlIG2", // Luna
             "3qYt5zzf9B414wKsDhrtaO"  // Krystal
         ]
@@ -194,9 +196,9 @@ export const artistRegistry: ArtistRegistry[] = [
         memberSpotifyArtistIds: [
             "6Xg22wJOAcnvPUfk5WvODH", // Soyeon
             "2pHkxVNynHBwQHhGaoBIXX", // Minnie
-            "",                         // Miyeon
+            "",                         // Miyeon N/A
             "22aCD8IrQZjcPgZw728QT6", // Yuqi
-            ""                          // Shuhua
+            ""                          // Shuhua N/A
         ]
     },
     // Girls' Generation
@@ -209,10 +211,10 @@ export const artistRegistry: ArtistRegistry[] = [
             "3qNVuliS40BLgXGxhdBdqu", // Taeyeon
             "2tYCDP6T15g9q19vIlh7vV", // Sunny
             "4C3uGP8vRDzxrhJxZiOjTe", // Tiffany
-            "",                         // Hyoyeon
+            "",                         // Hyoyeon N/A
             "2TMRvcwsmvVhvuEbKVEbZe", // Yuri
-            "",                         // Sooyoung
-            "",                         // Yoona
+            "",                         // Sooyoung N/A
+            "",                         // Yoona N/A
             "5uM1Et50auro2hTS6ZLcmT"  // Seohyun
         ]
     },
@@ -239,11 +241,11 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "Highlight",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // Yoon Doojoon
+            "",                         // Yoon Doojoon N/A
             "4drjiBRSqZoTD67xgZCmNo", // Yong Junhyung
             "1fwMtpwCEJovQuyxSuHcAd", // Yang Yoseob
             "3CC7p9QM4VjO62rmcaRP3z", // Lee Kikwang
-            ""                          // Son Dongwoon
+            ""                          // Son Dongwoon N/A
         ]
     },
     // INFINITE
@@ -253,13 +255,13 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "INFINITE",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // Sunggyu
+            "",                         // Sunggyu N/A
             "2AK8mEsvIRVd6biBapWe3o", // Dongwoo
-            "",                         // Woohyun
+            "",                         // Woohyun N/A
             "3bGzcepRQ7Zu1J6JDDAq1T", // Hoya
-            "",                         // Sungyeol
+            "",                         // Sungyeol N/A
             "2Vm2JJpUJzLoBEYQEVrmdV", // L
-            ""                          // Sungjong
+            ""                          // Sungjong N/A
         ]
     },
     // ITZY
@@ -271,7 +273,7 @@ export const artistRegistry: ArtistRegistry[] = [
         memberSpotifyArtistIds: [
             "3skli1w2n0nOZ4qkDbvV2m", // Yeji
             "19Io533x1pKQu6ZuisGek5", // Lia
-            "",                         // Ryujin
+            "",                         // Ryujin N/A
             "73nPXEFs9tGCNmSOcqFHPs", // Chaeryeong
             "6FsEIvsTuqjpejg2jDbYdv"  // Yuna
         ]
@@ -283,12 +285,12 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "IVE",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // Yujin
-            "",                         // Gaeul
+            "",                         // Yujin N/A
+            "",                         // Gaeul N/A
             "5s3Ys2jpFZD2t4bivtHG2q", // Rei
-            "",                         // Wonyoung
+            "",                         // Wonyoung N/A
             "2Cl2zS9nttS8xQeCp7zYT1", // Liz
-            ""                          // Leeseo
+            ""                          // Leeseo N/A
         ]
     },
     // LE SSERAFIM
@@ -298,11 +300,11 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "LE SSERAFIM",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // Sakura
+            "",                         // Sakura N/A
             "39j6wByxxNDb92rODch4mT", // Chaewon
             "13yWtUnz63q5VIs5SwoMhy", // Yunjin
-            "",                         // Kazuha
-            ""                          // Eunchae
+            "",                         // Kazuha N/A
+            ""                          // Eunchae N/A
         ]
     },
     // MAMAMOO
@@ -330,7 +332,20 @@ export const artistRegistry: ArtistRegistry[] = [
             "4JITZR64T7ws0m6VLtC1VK", // Kihyun
             "2X7BGapA7C4ELFcpFWNNTx", // Hyungwon
             "4rpOWirhzqN7NPgRX76l1k", // Joohoney
-            ""                          // I.M
+            "49tkHHS0mXwa5eLYvyvKyd"  // I.M
+        ]
+    },
+    // NCT (parent — cross-group units live here)
+    {
+        id: "nct",
+        spotifyArtistId: "", // NCT main Spotify page
+        label: "NCT",
+        type: "group",
+        memberSpotifyArtistIds: null,
+        subunits: [
+            "3paGCCtX1Xr4Gx53mSeZuQ", // NCT U
+            "3IniCa6EijyZ3bsY0eTG3C", // NCT 2020
+            "1LljMyYd0jLd4Q7z1iDR5H"  // JNJM
         ]
     },
     // NCT 127
@@ -339,16 +354,19 @@ export const artistRegistry: ArtistRegistry[] = [
         spotifyArtistId: "7f4ignuCJhLXfZ9giKT7rH",
         label: "NCT 127",
         type: "group",
+        family: "nct",
         memberSpotifyArtistIds: [
-            //"1z0Hi3myYw4x32xCq0H3aq", // Taeil
             "7oWUU7t60DhuzG3vjs7HV6", // Johnny
             "6SKusTjOAPsTZ6kareKQdm", // Taeyong
             "4WndMgZGitK4uQdKcmVHua", // Yuta
             "5IMXUzbeAyevQmvtOhXQGi", // Doyoung
             "0qQI2kmsvSe2ex9k94T5vu", // Jaehyun
-            "",                         // Jungwoo
+            "26ECn7DzgrUo23kSC9KD7k", // Jungwoo
             "70DFixYAFPv4Pf9kgSfR9O", // Mark
             "1pHMYguhayIoXmPjoOUyu3"  // Haechan
+        ],
+        subunits: [
+            "0W0w607z3JEA1vXLz9FVGw" // NCT DoJaeJung (Doyoung, Jaehyun, Jungwoo)
         ]
     },
     // NCT Dream
@@ -357,14 +375,15 @@ export const artistRegistry: ArtistRegistry[] = [
         spotifyArtistId: "1gBUSTR3TyDdTVFIaQnc02",
         label: "NCT Dream",
         type: "group",
+        family: "nct",
         memberSpotifyArtistIds: [
             "70DFixYAFPv4Pf9kgSfR9O", // Mark
-            "",                         // Renjun
+            "",                         // Renjun N/A
             "3DZrLuJOQFKqV2sjMsKb1V", // Jeno
             "1pHMYguhayIoXmPjoOUyu3", // Haechan
-            "",                         // Jaemin
-            "",                         // Chenle
-            ""                          // Jisung
+            "",                         // Jaemin N/A
+            "",                         // Chenle N/A
+            ""                          // Jisung N/A
         ]
     },
     // NCT WISH
@@ -373,13 +392,14 @@ export const artistRegistry: ArtistRegistry[] = [
         spotifyArtistId: "4FqmqIspLaUGtxAFFLsZxc",
         label: "NCT WISH",
         type: "group",
+        family: "nct",
         memberSpotifyArtistIds: [
-            "", // Sion
-            "", // Riku
-            "", // Yushi
-            "", // Sakuya
-            "", // Jaehee
-            ""  // Shotaro
+            "", // Sion N/A
+            "", // Riku N/A
+            "", // Yushi N/A
+            "", // Sakuya N/A
+            "", // Jaehee N/A
+            ""  // Shotaro N/A
         ]
     },
     // NewJeans
@@ -389,11 +409,11 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "NewJeans",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // Minji
+            "",                         // Minji N/A
             "14E7RzXOsb9iMithqexVOd", // Hanni
             "3BNhPTiKBExlE45mYeC9YY", // Danielle
-            "",                         // Haerin
-            ""                          // Hyein
+            "",                         // Haerin N/A
+            ""                          // Hyein N/A
         ]
     },
     // Red Velvet
@@ -417,7 +437,7 @@ export const artistRegistry: ArtistRegistry[] = [
         label: "SEVENTEEN",
         type: "group",
         memberSpotifyArtistIds: [
-            "",                         // S.Coups
+            "",                         // S.Coups N/A
             "6KDLlQYeeqUe5OQ2JrdNzF", // Jeonghan
             "74AwWFYdjQ3ER5vHO4H7b0", // Joshua
             "38Gn0ZVC8TQwuaMxBK1yRV", // Jun
@@ -425,11 +445,18 @@ export const artistRegistry: ArtistRegistry[] = [
             "3rHcBT06Vb1XGVUWhDALZt", // Wonwoo
             "4TdiASPlU3QdZvGQBothcQ", // Woozi
             "4l7mkcB0cZgIQrcd2AsQI3", // DK
-            "",                         // Mingyu
-            "",                         // The8
+            "5gUpo0BRmo6EOTbyU3z5Ay", // Mingyu
+            "4DqFd6XE3dX4LWXHJVVpLk",  // The8
             "0Vb2DjojEYsasFpc3aTZb6", // Seungkwan
             "2Y34b9AOK30zXgL7cAH4NG", // Vernon
             "5YaeXxzvqGNBCguELlKo6G"  // Dino
+        ],
+        subunits: [
+            "7GvlsjcgBrsE578yghOq7D", //JxW
+            "1uAT5bTSp6dWbNmixIUP5t", //BSS
+            "4wBjmEkWhY4T22q00CiF5V", //DxS
+            "7kjuLdYbtTkWBToMu2ebZN", // CxM
+            "1EReYiseDwE51FzGm7EK9n", // HxW
         ]
     },
     // SHINee
@@ -442,7 +469,7 @@ export const artistRegistry: ArtistRegistry[] = [
             "7sZ5ipSoboWdqXkdj6AXHo", // Onew
             "6XXKPxRX2WWPPtfodzpc2v", // Key
             "5rGgflnIpRNizTCozbYBuY", // Jonghyun
-            "",                         // Minho
+            "08uRwDeNv1d7FSwlOUZdSn", // Minho
             "13rF01aOogvnkuQXOlgTW8"  // Taemin
         ]
     },
@@ -473,13 +500,13 @@ export const artistRegistry: ArtistRegistry[] = [
             "1rVpXgPDVeUXPKKqVEnAGb", // Leeteuk
             "7GbN8yzIP7CFK5bNbUi6L3", // Heechul
             "4hyF8Vtc73RYJr3RgTE2Zf", // Yesung
-            "",                         // Shindong
+            "",                         // Shindong N/A
             "2O46GIp2cr4sZaVPcP0ket", // Sungmin
             "4QRqp8zf5JtqaMk2OOU3NX", // Eunhyuk
             "4TSRZ3mVg0Lu0qmtJPiPEY", // Donghae
             "2rg9fZFK6wnlbRKUv7zkht", // Siwon
             "0fwfMuz3AmWRy2pyM5fDRo", // Ryeowook
-            "",                         // Kibum
+            "",                         // Kibum N/A
             "0il5ZP3xYOECtONJtZ38Ln"  // Kyuhyun
         ]
     },
@@ -494,7 +521,7 @@ export const artistRegistry: ArtistRegistry[] = [
             "03TzGrcj9wA6OShCB1chZX", // Soobin
             "69vfchlzopPm72nD2elXCH", // Beomgyu
             "1kpVcaBKejm2ZrLYZkKdM8", // Taehyun
-            ""                          // Huening Kai
+            ""                        // Huening Kai N/A
         ]
     },
     // TWICE
@@ -505,7 +532,7 @@ export const artistRegistry: ArtistRegistry[] = [
         type: "group",
         memberSpotifyArtistIds: [
             "1VwDG9aBflQupaFNjUru9A", // Nayeon
-            "",                         // Jeongyeon
+            "",                         // Jeongyeon N/A
             "6om1UeevPLC4yhlUrsxdiu", // Momo
             "4a4zvpQq5Phxr12Pu8Akmm", // Sana
             "7F1iAHRYxR3MY7yAEuFqgL", // Jihyo
@@ -526,7 +553,7 @@ export const artistRegistry: ArtistRegistry[] = [
             "3ioQ8ESGz5P413c69gikh8", // Leo
             "08fiOzXWHTizuWGyS1dWu6", // Ken
             "42xj5mBLvrFdW6tYns6mxs", // Ravi
-            "",                         // Hongbin
+            "",                       // Hongbin N/A
             "1WTpKxdwQrNsYW3MBJYwiG"  // Hyuk
         ]
     },
@@ -536,14 +563,15 @@ export const artistRegistry: ArtistRegistry[] = [
         spotifyArtistId: "1qBsABYUrxg9afpMtyoFKz",
         label: "WayV",
         type: "group",
+        family: "nct",
         memberSpotifyArtistIds: [
             "4s2DuSSi7Puz6PGgCE8pKi", // Kun
             "3Q5Qep7ytrjVleNnMnntgQ", // Ten
-            "",                         // WinWin
-            "",                         // Lucas
+            "",                         // WinWin N/A
+            "",                         // Lucas N/A
             "51kPKCSzbLwEQFFwhfS4R7", // Xiaojun
             "5wrZ59w1ndSBlPeUj2f6Fs", // Hendery
-            ""                          // Yangyang
+            "5yyf4YDCKGaa71SC7KRw2L"  // Yangyang
         ]
     },
 ];
