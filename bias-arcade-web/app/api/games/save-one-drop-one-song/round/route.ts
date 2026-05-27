@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/games/save-one-drop-one-song/sessionStore";
-import { fetchTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySource";
+import { fetchArtistTrackBatch, fetchTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySource";
 import { dedupeTracks, shuffle } from "@/lib/games/save-one-drop-one-song/helpers";
 import { GameRound, SongA, SongB } from "@/lib/games/save-one-drop-one-song/types";
+import { resolveCustomScope } from "@/lib/games/shared/artist-registry";
 
 const DEFAULT_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
@@ -87,6 +88,26 @@ export async function POST(request: NextRequest) {
 
         session.pool = dedupeTracks([...session.pool, ...toAdd]);
         fresh = getFresh(session);
+      }
+    } else if (session.settings.scope.type === "custom") {
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+        attempt += 1
+      ) {
+        const { groupLabels, memberIds } = resolveCustomScope(session.settings.scope.artistIds);
+        const batch = await fetchArtistTrackBatch(request, {
+          groupLabels,
+          memberIds,
+          market: session.settings.market,
+          variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
+        });
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id)
+        );
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        if (getFresh(session).length >= 2) break;
       }
     }
 

@@ -89,7 +89,11 @@ export async function POST(request: NextRequest) {
           market: session.settings.market,
           variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
         });
-        session.pool = dedupeTracks([...session.pool, ...batch]);
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id) && !session.usedAnswers.has(t.id)
+        );
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
         if (getFresh(session).length >= optionsCount) break;
       }
     }

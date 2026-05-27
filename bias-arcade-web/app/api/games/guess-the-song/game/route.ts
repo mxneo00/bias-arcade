@@ -74,15 +74,15 @@ export async function POST(request: NextRequest) {
 
     const session = createSession({ market, seedGenres, optionsCount, scope, roundCap: 0 });
 
-    if (scope.type !== "all-kpop") {
+    if (scope.type === "custom") {
         try {
             const { groupLabels, memberIds } = resolveCustomScope(scope.artistIds);
 
             const tracks = await fetchArtistTrackBatch(request, {
-                groupLabels: scope.type === "group+solo" ? [scope.label] : scope.type === "custom" ? [scope.label] : [],
-                memberIds: scope.type === "group+solo" ? scope.memberArtistIds : [],
+                groupLabels,
+                memberIds,
                 market,
-                variant: undefined,
+                variant: session.variant,
             });
             const roundCap = Math.max(5, groupLabels.length *15);
 
