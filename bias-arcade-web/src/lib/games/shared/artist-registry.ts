@@ -11,6 +11,7 @@ type ArtistRegistry = {
 
 export const artistRegistry: ArtistRegistry[] = [
 
+    // #region 2NE1
     // ─── 2NE1 ─────────────────────────────────────────────────────────────────
     {
         id: "2ne1",
@@ -30,6 +31,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "2ne1-park-bom",     spotifyArtistId: "3uHb6dRazmcaT15bMexUtt", label: "Park Bom",     type: "solo", memberSpotifyArtistIds: null, family: "2ne1" },
     { id: "2ne1-sandara-park", spotifyArtistId: "3LKVw6XQYcot0OZMFmf4IP", label: "Sandara Park", type: "solo", memberSpotifyArtistIds: null, family: "2ne1" },
 
+    // #endregion
+    // #region 2PM
     // ─── 2PM ──────────────────────────────────────────────────────────────────
     {
         id: "2pm",
@@ -53,6 +56,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "2pm-junho",    spotifyArtistId: "1nEFr6pWrot80eRuOkZQxg", label: "Junho",    type: "solo", memberSpotifyArtistIds: null, family: "2pm" },
     { id: "2pm-chansung", spotifyArtistId: "0Xysc1acrmF3w8vMvmSUPW", label: "Chansung", type: "solo", memberSpotifyArtistIds: null, family: "2pm" },
 
+    // #endregion
+    // #region aespa
     // ─── aespa ────────────────────────────────────────────────────────────────
     {
         id: "aespa",
@@ -72,6 +77,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "aespa-winter",   spotifyArtistId: "3mPquBmMu97Iq9TpzQ6ayI", label: "Winter",   type: "solo", memberSpotifyArtistIds: null, family: "aespa" },
     { id: "aespa-ningning", spotifyArtistId: "5t1uryofgueHrjrryqX8vM", label: "Ningning", type: "solo", memberSpotifyArtistIds: null, family: "aespa" },
 
+    // #endregion
+    // #region ASTRO
     // ─── ASTRO ────────────────────────────────────────────────────────────────
     {
         id: "astro",
@@ -95,6 +102,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "astro-rocky",      spotifyArtistId: "3bQABAi10Xqg1WsMAhYdBZ", label: "Rocky",      type: "solo", memberSpotifyArtistIds: null, family: "astro" },
     { id: "astro-sanha",      spotifyArtistId: "6zLERXpqnnXhEnhva48jKW", label: "Sanha",      type: "solo", memberSpotifyArtistIds: null, family: "astro" },
 
+    // #endregion
+    // #region ATEEZ
     // ─── ATEEZ ────────────────────────────────────────────────────────────────
     {
         id: "ateez",
@@ -118,6 +127,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "ateez-wooyoung",  spotifyArtistId: "5in2h2c2DWNHKzgZo9OnVO", label: "Wooyoung",  type: "solo", memberSpotifyArtistIds: null, family: "ateez" },
     { id: "ateez-jongho",    spotifyArtistId: "5gecqU5FZgxVdz1AtLumT0", label: "Jongho",    type: "solo", memberSpotifyArtistIds: null, family: "ateez" },
 
+    // #endregion
+    // #region B.A.P
     // ─── B.A.P ────────────────────────────────────────────────────────────────
     {
         id: "bap",
@@ -141,6 +152,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "bap-jongup",       spotifyArtistId: "5Pvxbh8QweK3Gm4NS0e2KD", label: "Jongup",       type: "solo", memberSpotifyArtistIds: null, family: "bap" },
     { id: "bap-zelo",         spotifyArtistId: "2N5L6zU0bi3q8AdJpNW1z3", label: "Zelo",         type: "solo", memberSpotifyArtistIds: null, family: "bap" },
 
+    // #endregion
+    // #region BIGBANG
     // ─── BIGBANG ──────────────────────────────────────────────────────────────
     {
         id: "bigbang",
@@ -160,6 +173,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "bigbang-taeyang", spotifyArtistId: "6udveWUgX4vu75FF0DTrXV", label: "Taeyang",  type: "solo", memberSpotifyArtistIds: null, family: "bigbang" },
     { id: "bigbang-daesung", spotifyArtistId: "1OQxmfKN9UG5C7nr4MkasO", label: "Daesung",  type: "solo", memberSpotifyArtistIds: null, family: "bigbang" },
 
+    // #endregion
+    // #region BLACKPINK
     // ─── BLACKPINK ────────────────────────────────────────────────────────────
     {
         id: "blackpink",
@@ -179,6 +194,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "blackpink-rose",   spotifyArtistId: "3eVa5w3URK5duf6eyVDbu9", label: "Rosé",   type: "solo", memberSpotifyArtistIds: null, family: "blackpink" },
     { id: "blackpink-lisa",   spotifyArtistId: "5L1lO4eRHmJ7a0Q6csE5cT", label: "Lisa",   type: "solo", memberSpotifyArtistIds: null, family: "blackpink" },
 
+    // #endregion
+    // #region BTS
     // ─── BTS ──────────────────────────────────────────────────────────────────
     {
         id: "bts",
@@ -204,6 +221,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "bts-v",        spotifyArtistId: "3JsHnjpbhX4SnySpvpa9DK", label: "V",        type: "solo", memberSpotifyArtistIds: null, family: "bts" },
     { id: "bts-jungkook", spotifyArtistId: "6HaGTQPmzraVmaVxvz6EUc", label: "Jungkook", type: "solo", memberSpotifyArtistIds: null, family: "bts" },
 
+    // #endregion
+    // #region ENHYPEN
     // ─── ENHYPEN ──────────────────────────────────────────────────────────────
     {
         id: "enhypen",
@@ -219,6 +238,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "enhypen-heeseung", spotifyArtistId: "6dNavn0Wr11k0fRVlbEi3D", label: "Heeseung", type: "solo", memberSpotifyArtistIds: null, family: "enhypen" },
     { id: "enhypen-jay",      spotifyArtistId: "1dxyDekkPqYVKpC7iW71zJ", label: "Jay",      type: "solo", memberSpotifyArtistIds: null, family: "enhypen" },
 
+    // #endregion
+    // #region EXO
     // ─── EXO ──────────────────────────────────────────────────────────────────
     {
         id: "exo",
@@ -246,6 +267,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "exo-do",       spotifyArtistId: "2CQZr2RPZmrcvDnaod1ldC", label: "D.O.",     type: "solo", memberSpotifyArtistIds: null, family: "exo" },
     { id: "exo-kai",      spotifyArtistId: "6iVo62B0bdTknRcrktCmak", label: "Kai",      type: "solo", memberSpotifyArtistIds: null, family: "exo" },
 
+    // #endregion
+    // #region f(x)
     // ─── f(x) ─────────────────────────────────────────────────────────────────
     {
         id: "fx",
@@ -261,6 +284,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "fx-luna",    spotifyArtistId: "56HZvtrzD82YKMGGJTlIG2", label: "Luna",    type: "solo", memberSpotifyArtistIds: null, family: "fx" },
     { id: "fx-krystal", spotifyArtistId: "3qYt5zzf9B414wKsDhrtaO", label: "Krystal", type: "solo", memberSpotifyArtistIds: null, family: "fx" },
 
+    // #endregion
+    // #region (G)I-DLE
     // ─── (G)I-DLE ─────────────────────────────────────────────────────────────
     {
         id: "gidle",
@@ -278,6 +303,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "gidle-minnie", spotifyArtistId: "2pHkxVNynHBwQHhGaoBIXX", label: "Minnie", type: "solo", memberSpotifyArtistIds: null, family: "gidle" },
     { id: "gidle-yuqi",   spotifyArtistId: "22aCD8IrQZjcPgZw728QT6", label: "Yuqi",   type: "solo", memberSpotifyArtistIds: null, family: "gidle" },
 
+    // #endregion
+    // #region Girls' Generation
     // ─── Girls' Generation ────────────────────────────────────────────────────
     {
         id: "girls-generation",
@@ -299,6 +326,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "girls-generation-yuri",    spotifyArtistId: "2TMRvcwsmvVhvuEbKVEbZe", label: "Yuri",    type: "solo", memberSpotifyArtistIds: null, family: "girls-generation" },
     { id: "girls-generation-seohyun", spotifyArtistId: "5uM1Et50auro2hTS6ZLcmT", label: "Seohyun", type: "solo", memberSpotifyArtistIds: null, family: "girls-generation" },
 
+    // #endregion
+    // #region GOT7
     // ─── GOT7 ─────────────────────────────────────────────────────────────────
     {
         id: "got7",
@@ -324,6 +353,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "got7-bambam",   spotifyArtistId: "0AwW3qkHckg8Dx51aSy6hy", label: "BamBam",   type: "solo", memberSpotifyArtistIds: null, family: "got7" },
     { id: "got7-yugyeom",  spotifyArtistId: "3ohXmy1PGdB3XgzhPqQ0tY", label: "Yugyeom",  type: "solo", memberSpotifyArtistIds: null, family: "got7" },
 
+    // #endregion
+    // #region Highlight
     // ─── Highlight ────────────────────────────────────────────────────────────
     {
         id: "highlight",
@@ -341,6 +372,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "highlight-yang-yoseob",   spotifyArtistId: "1fwMtpwCEJovQuyxSuHcAd", label: "Yang Yoseob",   type: "solo", memberSpotifyArtistIds: null, family: "highlight" },
     { id: "highlight-lee-kikwang",   spotifyArtistId: "3CC7p9QM4VjO62rmcaRP3z", label: "Lee Kikwang",   type: "solo", memberSpotifyArtistIds: null, family: "highlight" },
 
+    // #endregion
+    // #region INFINITE
     // ─── INFINITE ─────────────────────────────────────────────────────────────
     {
         id: "infinite",
@@ -358,6 +391,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "infinite-hoya",    spotifyArtistId: "3bGzcepRQ7Zu1J6JDDAq1T", label: "Hoya",    type: "solo", memberSpotifyArtistIds: null, family: "infinite" },
     { id: "infinite-l",       spotifyArtistId: "2Vm2JJpUJzLoBEYQEVrmdV", label: "L",       type: "solo", memberSpotifyArtistIds: null, family: "infinite" },
 
+    // #endregion
+    // #region ITZY
     // ─── ITZY ─────────────────────────────────────────────────────────────────
     {
         id: "itzy",
@@ -377,6 +412,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "itzy-chaeryeong", spotifyArtistId: "73nPXEFs9tGCNmSOcqFHPs", label: "Chaeryeong", type: "solo", memberSpotifyArtistIds: null, family: "itzy" },
     { id: "itzy-yuna",       spotifyArtistId: "6FsEIvsTuqjpejg2jDbYdv", label: "Yuna",       type: "solo", memberSpotifyArtistIds: null, family: "itzy" },
 
+    // #endregion
+    // #region IVE
     // ─── IVE ──────────────────────────────────────────────────────────────────
     {
         id: "ive",
@@ -392,6 +429,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "ive-rei", spotifyArtistId: "5s3Ys2jpFZD2t4bivtHG2q", label: "Rei", type: "solo", memberSpotifyArtistIds: null, family: "ive" },
     { id: "ive-liz", spotifyArtistId: "2Cl2zS9nttS8xQeCp7zYT1", label: "Liz", type: "solo", memberSpotifyArtistIds: null, family: "ive" },
 
+    // #endregion
+    // #region LE SSERAFIM
     // ─── LE SSERAFIM ──────────────────────────────────────────────────────────
     {
         id: "le-sserafim",
@@ -407,6 +446,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "le-sserafim-chaewon", spotifyArtistId: "39j6wByxxNDb92rODch4mT", label: "Chaewon", type: "solo", memberSpotifyArtistIds: null, family: "le-sserafim" },
     { id: "le-sserafim-yunjin",  spotifyArtistId: "13yWtUnz63q5VIs5SwoMhy", label: "Yunjin",  type: "solo", memberSpotifyArtistIds: null, family: "le-sserafim" },
 
+    // #endregion
+    // #region MAMAMOO
     // ─── MAMAMOO ──────────────────────────────────────────────────────────────
     {
         id: "mamamoo",
@@ -426,6 +467,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "mamamoo-wheein",   spotifyArtistId: "0BqRGrwqndrtNkojXiqIzL", label: "Wheein",   type: "solo", memberSpotifyArtistIds: null, family: "mamamoo" },
     { id: "mamamoo-hwasa",    spotifyArtistId: "7bmYpVgQub656uNTu6qGNQ", label: "Hwasa",    type: "solo", memberSpotifyArtistIds: null, family: "mamamoo" },
 
+    // #endregion
+    // #region MONSTA X
     // ─── MONSTA X ─────────────────────────────────────────────────────────────
     {
         id: "monsta-x",
@@ -449,6 +492,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "monsta-x-joohoney", spotifyArtistId: "4rpOWirhzqN7NPgRX76l1k", label: "Joohoney", type: "solo", memberSpotifyArtistIds: null, family: "monsta-x" },
     { id: "monsta-x-im",       spotifyArtistId: "49tkHHS0mXwa5eLYvyvKyd", label: "I.M",      type: "solo", memberSpotifyArtistIds: null, family: "monsta-x" },
 
+    // #endregion
+    // #region NCT (parent)
     // ─── NCT (parent) ─────────────────────────────────────────────────────────
     {
         id: "nct",
@@ -463,6 +508,8 @@ export const artistRegistry: ArtistRegistry[] = [
         ],
     },
 
+    // #endregion
+    // #region NCT 127
     // ─── NCT 127 ──────────────────────────────────────────────────────────────
     {
         id: "nct-127",
@@ -494,6 +541,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "nct-127-mark",    spotifyArtistId: "70DFixYAFPv4Pf9kgSfR9O", label: "Mark",    type: "solo", memberSpotifyArtistIds: null, family: "nct-127" },
     { id: "nct-127-haechan", spotifyArtistId: "1pHMYguhayIoXmPjoOUyu3", label: "Haechan", type: "solo", memberSpotifyArtistIds: null, family: "nct-127" },
 
+    // #endregion
+    // #region NCT Dream
     // ─── NCT Dream ────────────────────────────────────────────────────────────
     {
         id: "nct-dream",
@@ -511,6 +560,8 @@ export const artistRegistry: ArtistRegistry[] = [
     // Mark and Haechan share entries with NCT 127
     { id: "nct-dream-jeno", spotifyArtistId: "3DZrLuJOQFKqV2sjMsKb1V", label: "Jeno", type: "solo", memberSpotifyArtistIds: null, family: "nct-dream" },
 
+    // #endregion
+    // #region NCT WISH
     // ─── NCT WISH ─────────────────────────────────────────────────────────────
     {
         id: "nct-wish",
@@ -522,6 +573,8 @@ export const artistRegistry: ArtistRegistry[] = [
     },
     // NCT WISH — no confirmed member Spotify IDs
 
+    // #endregion
+    // #region NewJeans
     // ─── NewJeans ─────────────────────────────────────────────────────────────
     {
         id: "newjeans",
@@ -537,6 +590,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "newjeans-hanni",    spotifyArtistId: "14E7RzXOsb9iMithqexVOd", label: "Hanni",    type: "solo", memberSpotifyArtistIds: null, family: "newjeans" },
     { id: "newjeans-danielle", spotifyArtistId: "3BNhPTiKBExlE45mYeC9YY", label: "Danielle", type: "solo", memberSpotifyArtistIds: null, family: "newjeans" },
 
+    // #endregion
+    // #region Red Velvet
     // ─── Red Velvet ───────────────────────────────────────────────────────────
     {
         id: "red-velvet",
@@ -558,6 +613,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "red-velvet-joy",    spotifyArtistId: "0sYpJ0nCC8AlDrZFeAA7ub", label: "Joy",    type: "solo", memberSpotifyArtistIds: null, family: "red-velvet" },
     { id: "red-velvet-yeri",   spotifyArtistId: "4xzwjGxzfKglU0cNW4q4l1", label: "Yeri",   type: "solo", memberSpotifyArtistIds: null, family: "red-velvet" },
 
+    // #endregion
+    // #region SEVENTEEN
     // ─── SEVENTEEN ────────────────────────────────────────────────────────────
     {
         id: "seventeen",
@@ -600,6 +657,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "seventeen-vernon",    spotifyArtistId: "2Y34b9AOK30zXgL7cAH4NG", label: "Vernon",    type: "solo", memberSpotifyArtistIds: null, family: "seventeen" },
     { id: "seventeen-dino",      spotifyArtistId: "5YaeXxzvqGNBCguELlKo6G", label: "Dino",      type: "solo", memberSpotifyArtistIds: null, family: "seventeen" },
 
+    // #endregion
+    // #region SHINee
     // ─── SHINee ───────────────────────────────────────────────────────────────
     {
         id: "shinee",
@@ -621,6 +680,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "shinee-minho",    spotifyArtistId: "08uRwDeNv1d7FSwlOUZdSn", label: "Minho",    type: "solo", memberSpotifyArtistIds: null, family: "shinee" },
     { id: "shinee-taemin",   spotifyArtistId: "13rF01aOogvnkuQXOlgTW8", label: "Taemin",   type: "solo", memberSpotifyArtistIds: null, family: "shinee" },
 
+    // #endregion
+    // #region Stray Kids
     // ─── Stray Kids ───────────────────────────────────────────────────────────
     {
         id: "stray-kids",
@@ -648,6 +709,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "stray-kids-seungmin",  spotifyArtistId: "2nTtulf6WM0raQcIbzYJuf", label: "Seungmin",  type: "solo", memberSpotifyArtistIds: null, family: "stray-kids" },
     { id: "stray-kids-in",        spotifyArtistId: "1odvXbzhdzNajv6un9x5Mc", label: "I.N",       type: "solo", memberSpotifyArtistIds: null, family: "stray-kids" },
 
+    // #endregion
+    // #region Super Junior
     // ─── Super Junior ─────────────────────────────────────────────────────────
     {
         id: "super-junior",
@@ -677,6 +740,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "super-junior-ryeowook", spotifyArtistId: "0fwfMuz3AmWRy2pyM5fDRo", label: "Ryeowook", type: "solo", memberSpotifyArtistIds: null, family: "super-junior" },
     { id: "super-junior-kyuhyun",  spotifyArtistId: "0il5ZP3xYOECtONJtZ38Ln", label: "Kyuhyun",  type: "solo", memberSpotifyArtistIds: null, family: "super-junior" },
 
+    // #endregion
+    // #region TXT
     // ─── TXT ──────────────────────────────────────────────────────────────────
     {
         id: "txt",
@@ -696,6 +761,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "txt-beomgyu", spotifyArtistId: "69vfchlzopPm72nD2elXCH", label: "Beomgyu", type: "solo", memberSpotifyArtistIds: null, family: "txt" },
     { id: "txt-taehyun", spotifyArtistId: "1kpVcaBKejm2ZrLYZkKdM8", label: "Taehyun", type: "solo", memberSpotifyArtistIds: null, family: "txt" },
 
+    // #endregion
+    // #region TWICE
     // ─── TWICE ────────────────────────────────────────────────────────────────
     {
         id: "twice",
@@ -723,6 +790,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "twice-chaeyoung", spotifyArtistId: "0qtqWLjAkheu9MaVCQ3FXa", label: "Chaeyoung", type: "solo", memberSpotifyArtistIds: null, family: "twice" },
     { id: "twice-tzuyu",     spotifyArtistId: "1arCVYXeStgCY2UazBNBLK", label: "Tzuyu",     type: "solo", memberSpotifyArtistIds: null, family: "twice" },
 
+    // #endregion
+    // #region VIXX
     // ─── VIXX ─────────────────────────────────────────────────────────────────
     {
         id: "vixx",
@@ -744,6 +813,8 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "vixx-ravi", spotifyArtistId: "42xj5mBLvrFdW6tYns6mxs", label: "Ravi", type: "solo", memberSpotifyArtistIds: null, family: "vixx" },
     { id: "vixx-hyuk", spotifyArtistId: "1WTpKxdwQrNsYW3MBJYwiG", label: "Hyuk", type: "solo", memberSpotifyArtistIds: null, family: "vixx" },
 
+    // #endregion
+    // #region WayV
     // ─── WayV ─────────────────────────────────────────────────────────────────
     {
         id: "wayv",
@@ -765,6 +836,7 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "wayv-xiaojun",  spotifyArtistId: "51kPKCSzbLwEQFFwhfS4R7", label: "Xiaojun",  type: "solo", memberSpotifyArtistIds: null, family: "wayv" },
     { id: "wayv-hendery",  spotifyArtistId: "5wrZ59w1ndSBlPeUj2f6Fs", label: "Hendery",  type: "solo", memberSpotifyArtistIds: null, family: "wayv" },
     { id: "wayv-yangyang", spotifyArtistId: "5yyf4YDCKGaa71SC7KRw2L", label: "Yangyang", type: "solo", memberSpotifyArtistIds: null, family: "wayv" },
+    // #endregion
 ];
 
 export function resolveCustomScope(artistId: string[]): { groupNames: string[]; memberIds: string[] } {
