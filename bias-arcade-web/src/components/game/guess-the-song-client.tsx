@@ -47,6 +47,7 @@ function GuessTheSongContent() {
 	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
 	const [roundCap, setRoundCap] = useState<number>(0);
 	const [showModeSelector, setShowModeSelector] = useState(false);
+	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
 
 	const hasAnswered = selectedTrackId !== null;
 	const canContinueToResults = hasAnswered || didSkipRound;
@@ -274,11 +275,22 @@ function GuessTheSongContent() {
 						<div className={styles.setupControls}>
 							<label className={styles.modeSelector} htmlFor="game-mode">
 								<span>Mode</span>
-								<select id="game-mode" disabled defaultValue="classic">
-									<option value="classic">Classic (Placeholder)</option>
+								<select
+									id="game-mode"
+									value={gameMode}
+									onChange={(e) => setGameMode(e.target.value as "all-kpop" | "artist-select")}
+								>
+									<option value="all-kpop">All K-Pop</option>
+									<option value="artist-select">Artist Select</option>
 								</select>
 							</label>
-							<button type="button" onClick={() => setShowModeSelector(true)} className={styles.primaryButton}>
+							<button type="button" onClick={() => {
+								if (gameMode === "all-kpop") {
+									void handleStartGame({ type: "all-kpop" });
+								} else {
+									setShowModeSelector(true);
+								}
+							}} className={styles.primaryButton}>
 								Start Game
 							</button>
 						</div>
