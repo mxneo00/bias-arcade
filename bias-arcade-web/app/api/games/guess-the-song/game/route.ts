@@ -3,8 +3,8 @@ import { createSession, deleteSession } from "@/lib/games/guess-the-song/session
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth";
 import { updateUserStats } from "@/lib/collections/updateStats";
-import { fetchArtistDiscography } from "@/lib/games/guess-the-song/spotifySource";
-import { computeRoundCap } from "@/lib/games/shared/round-cap";
+import { fetchArtistTrackBatch } from "@/lib/games/guess-the-song/spotifySource";
+import { resolveCustomScope } from "@/lib/games/shared/artist-registry";
 import { ArtistScope } from "@/lib/games/shared/scope";
 
 const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
@@ -76,12 +76,15 @@ export async function POST(request: NextRequest) {
 
     if (scope.type !== "all-kpop") {
         try {
-            const artistIds = 
-                scope.type === "group+solo" ? [scope.artistId, ...scope.memberArtistIds] :
-                scope.type === "custom" ? scope.artistIds :[scope.artistId];
+            const { groupLabels, memberIds } = resolveCustomScope(scope.artistIds);
 
-            const tracks = await fetchArtistDiscography(request, artistIds, market);
-            const roundCap = computeRoundCap(tracks.length, optionsCount);
+            const tracks = await fetchArtistTrackBatch(request, {
+                groupLabels: scope.type === "group+solo" ? [scope.label] : scope.type === "custom" ? [scope.label] : [],
+                memberIds: scope.type === "group+solo" ? scope.memberArtistIds : [],
+                market,
+                variant: undefined,
+            });
+            const roundCap = Math.max(5, groupLabels.length *15);
 
             session.pool = tracks;
             session.maxRounds = roundCap;

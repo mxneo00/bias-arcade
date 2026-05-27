@@ -3,6 +3,8 @@ import { getSession } from "@/lib/games/guess-the-song/sessionStore";
 import { fetchTrackBatch } from "@/lib/games/guess-the-song/spotifySource";
 import { dedupeTracks, shuffle } from "@/lib/games/guess-the-song/helpers";
 import { RoundPayload, RoundTrack } from "@/lib/games/guess-the-song/types";
+import { fetchArtistTrackBatch } from "@/lib/games/guess-the-song/spotifySource";
+import { resolveCustomScope } from "@/lib/games/shared/artist-registry";
 
 const DEFAULT_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
@@ -72,6 +74,22 @@ export async function POST(request: NextRequest) {
         );
 
         session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        if (getFresh(session).length >= optionsCount) break;
+      }
+    } else if (session.settings.scope.type === "custom") {
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+        attempt += 1
+      ) {
+        const { groupLabels, memberIds } = resolveCustomScope(session.settings.scope.artistIds);
+        const batch = await fetchArtistTrackBatch(request, {
+          groupLabels,
+          memberIds,
+          market: session.settings.market,
+          variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
+        });
+        session.pool = dedupeTracks([...session.pool, ...batch]);
         if (getFresh(session).length >= optionsCount) break;
       }
     }

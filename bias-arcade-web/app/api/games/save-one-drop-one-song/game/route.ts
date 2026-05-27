@@ -3,9 +3,9 @@ import { createSession, deleteSession } from "@/lib/games/save-one-drop-one-song
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth";
 import { updateUserStats } from "@/lib/collections/updateStats";
-import { fetchArtistDiscography } from "@/lib/games/save-one-drop-one-song/spotifySource";
-import { computeRoundCap } from "@/lib/games/shared/round-cap";
+import { fetchArtistTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySource";
 import { ArtistScope } from "@/lib/games/shared/scope";
+import { resolveCustomScope } from "@/lib/games/shared/artist-registry";
 
 const DEFAULT_MARKET = "KR";
 const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
@@ -74,12 +74,14 @@ export async function POST(request: NextRequest) {
 
     if (scope.type !== "all-kpop") {
         try {
-            const artistIds = 
-                scope.type === "group+solo" ? [scope.artistId, ...scope.memberArtistIds] :
-                scope.type === "custom" ? scope.artistIds :[scope.artistId];
-
-            const tracks = await fetchArtistDiscography(request, artistIds, market);
-            const roundCap = computeRoundCap(tracks.length, 2);
+            const { groupLabels, memberIds } = resolveCustomScope(scope.artistIds);
+            const tracks = await fetchArtistTrackBatch(request, {
+                groupLabels,
+                memberIds,
+                market,
+                variant: undefined,
+            });
+            const roundCap = Math.max(5, groupLabels.length *15);
 
             session.pool = tracks;
             session.maxRounds = roundCap;

@@ -575,3 +575,21 @@ export const artistRegistry: ArtistRegistry[] = [
         ]
     },
 ];
+
+export function resolveCustomScope(artistId: string[]): { groupLabels: string[]; memberIds: string[]} {
+    const groupLabels: string[] = [];
+    const memberIds: string[] = [];
+    const registryIdSet = new Set(artistRegistry.map(e => e.spotifyArtistId));
+
+    for (const id of artistId) {
+        const entry = artistRegistry.find(e => e.spotifyArtistId === id);
+        if (entry) {
+            groupLabels.push(entry.label);
+
+        } else {
+            memberIds.push(id);
+        }
+    }
+
+    return { groupLabels, memberIds };
+}
