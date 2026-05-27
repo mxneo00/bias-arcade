@@ -74,9 +74,9 @@ export async function POST(request: NextRequest) {
 
     if (scope.type !== "all-kpop") {
         try {
-            const artistIds = scope.type === "group+solo"
-                ? [scope.artistId, ...scope.memberArtistIds]
-                : [scope.artistId];
+            const artistIds = 
+                scope.type === "group+solo" ? [scope.artistId, ...scope.memberArtistIds] :
+                scope.type === "custom" ? scope.artistIds :[scope.artistId];
 
             const tracks = await fetchArtistDiscography(request, artistIds, market);
             const roundCap = computeRoundCap(tracks.length, 2);

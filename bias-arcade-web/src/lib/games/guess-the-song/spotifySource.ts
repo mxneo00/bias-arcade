@@ -354,7 +354,8 @@ async function fetchAlbumsForArtist(
             offset: String(offset),
         });
 
-        const response = await spotifyFetch(request, `/artists/${artistId}/albums?${sp.toString()}`, {
+        const url = `/artists/${artistId}/albums?include_groups=album,single&market=${market}&limit=${limit}&offset=${offset}`;
+        const response = await spotifyFetch(request, url, {
             method: "GET",
             cache: "no-store",
         });
@@ -406,7 +407,8 @@ async function fetchTracksForAlbum(
                 const retryAfterSeconds = getRetryAfterSeconds(response);
                 throw new Error(`Spotify rate limited. Please retry in ${retryAfterSeconds} seconds.`);
             }
-            throw new Error(`Failed to fetch tracks for album ${album.id}. Status: ${response.status}, Body: ${body}`);
+            console.warn('[fetchAlbumsForArtist] Failed to fetch tracks for album', album.id, 'Status:', response.status, 'Body:', body);
+            return[];
         }
 
         const payload = (await response.json()) as SpotifyAlbumTracksResponse;
@@ -438,13 +440,15 @@ export async function fetchArtistDiscography(
 
     const allTracks: CandidateTrack[] = [];
 
-    for (const artistId of validIds) {
-        const albums = await fetchAlbumsForArtist(request, artistId, market);
-        for (const album of albums) {
-            const tracks = await fetchTracksForAlbum(request, album, market);
-            allTracks.push(...tracks);
-        }
-    }
-
+    const perArtistTracks = await Promise.all(
+        validIds.map(async (artistId) => {
+            const albums = await fetchAlbumsForArtist(request, artistId, market);
+            const trackGroups = await Promise.all(
+                albums.map((album) => fetchTracksForAlbum(request, album, market))
+            );
+            return trackGroups.flat();
+        })
+    );
+    allTracks.push(...perArtistTracks.flat());
     return dedupeTracks(allTracks);
 }
