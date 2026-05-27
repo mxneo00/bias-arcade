@@ -270,7 +270,7 @@ function GuessTheSongContent() {
 					<section className={styles.panel}>
 						<div className={styles.panelHeader}>
 							<h2>Game Setup</h2>
-							<p>Choose your mode (coming soon) and start the game when ready.</p>
+							<p>Choose your mode and start the game when ready.</p>
 						</div>
 						<div className={styles.setupControls}>
 							<label className={styles.modeSelector} htmlFor="game-mode">

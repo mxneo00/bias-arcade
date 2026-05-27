@@ -47,6 +47,15 @@ function sanitizeScope(raw: unknown): ArtistScope {
             return { type: "group+solo", artistId, label, memberArtistIds };
         }
     }
+    if (obj.type === "custom") {
+        const artistIds = Array.isArray(obj.artistIds)
+            ? obj.artistIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+            : null;
+        const label = typeof obj.label === "string" ? obj.label : null;
+        if (artistIds && artistIds.length > 0 && label) {
+            return { type: "custom", artistIds, label };
+        }
+    }
     return { type: "all-kpop" };
 }
 

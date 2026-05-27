@@ -47,6 +47,15 @@ function sanitizeScope(raw: unknown): ArtistScope {
             return { type: "group+solo", artistId, label, memberArtistIds };
         }
     }
+    if (obj.type === "custom") {
+        const artistIds = Array.isArray(obj.artistIds)
+            ? obj.artistIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+            : null;
+        const label = typeof obj.label === "string" ? obj.label : null;
+        if (artistIds && artistIds.length > 0 && label) {
+            return { type: "custom", artistIds, label };
+        }
+    }
     return { type: "all-kpop" };
 }
 
@@ -67,7 +76,9 @@ export async function POST(request: NextRequest) {
 
     if (scope.type !== "all-kpop") {
         try {
-            const artistIds = scope.type === "group+solo" ? [scope.artistId, ...scope.memberArtistIds] : [scope.artistId];
+            const artistIds = 
+                scope.type === "group+solo" ? [scope.artistId, ...scope.memberArtistIds] :
+                scope.type === "custom" ? scope.artistIds :[scope.artistId];
 
             const tracks = await fetchArtistDiscography(request, artistIds, market);
             const roundCap = computeRoundCap(tracks.length, optionsCount);
