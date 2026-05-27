@@ -21,6 +21,7 @@ type SpotifyTrack = {
 type SpotifyRecommendationsResponse = { tracks?: SpotifyTrack[]; };
 type SpotifySearchResponse = { tracks?: { items?: SpotifyTrack[]; }; };
 type SpotifyArtistsResponse = { artists?: SpotifyArtistDetails[]; };
+type SpotifyArtistNameResponse = { artists?: Array<{ id: string; name: string }> };
 
 type CandidateTrack = (SongA | SongB);
 
@@ -299,54 +300,65 @@ export async function fetchTrackBatch(
 export async function fetchArtistTrackBatch(
     request: NextRequest,
     args: {
-        groupLabels: string[];
+        groupNames: string[];
         memberIds: string[];
-        market: string;
         variant?: string;
     }
-): Promise<(SongA | SongB)[]> {
-    const { groupLabels, memberIds, market, variant } = args;
-    const variantNum = (variant ?? "").split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7) || 7;
-    const searchOffset = (variantNum % 10) * 50; // gives 0, 50, 100 ... 450 — varies per refill
+): Promise<(SongA | SongB)[]> { 
+    const { groupNames, memberIds } = args;
 
-    const [groupResults, memberResults] = await Promise.all([
-        Promise.all(
-            groupLabels.map(async (label) => {
-                const sp = new URLSearchParams({
-                    q: `artist:${label}`,
-                    type: "track",
-                    market,
-                    limit: "50",
-                    offset: String(searchOffset),
-                });
-                const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
-                    method: "GET",
-                    cache: "no-store",
-                });
-                if (!response.ok) {
-                    console.warn(`[fetchArtistTrackBatch] Search failed for "${label}": ${response.status}`);
-                    return [] as CandidateTrack[];
+    // Look up names for member IDs only (group names already known from registry)
+    const memberNameMap = new Map<string, string>();
+    if (memberIds.length > 0) {
+        const CHUNK_SIZE = 50;
+        for (let i = 0; i < memberIds.length; i += CHUNK_SIZE) {
+            const chunk = memberIds.slice(i, i + CHUNK_SIZE);
+            const res = await spotifyFetch(request, `/artists?ids=${chunk.join(",")}`, {
+                method: "GET",
+                cache: "no-store",
+            });
+            if (res.ok) {
+                const payload = (await res.json()) as SpotifyArtistNameResponse;
+                for (const artist of payload.artists ?? []) {
+                    if (artist?.id && artist.name) {
+                        memberNameMap.set(artist.id, artist.name);
+                    }
                 }
-                const payload = (await response.json()) as SpotifySearchResponse;
-                return (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
-            })
-        ),
-        Promise.all(
-            memberIds.map(async (artistId) => {
-                const response = await spotifyFetch(
-                    request,
-                    `/artists/${artistId}/top-tracks?market=${encodeURIComponent(market)}`,
-                    { method: "GET", cache: "no-store" }
-                );
-                if (!response.ok) {
-                    console.warn(`[fetchArtistTrackBatch] Top-tracks failed for ${artistId}: ${response.status}`);
-                    return [] as CandidateTrack[];
-                }
-                const payload = (await response.json()) as { tracks: SpotifyTrack[] };
-                return (payload.tracks ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
-            })
-        ),
-    ]);
+            } else {
+                const body = await res.clone().text();
+                console.warn(`[fetchArtistTrackBatch] Artist name lookup failed: ${res.status} ${body}`);
+            }
+        }
+    }
 
-    return dedupeTracks([...groupResults.flat(), ...memberResults.flat()]);
+    const allNames = [
+        ...groupNames,
+        ...memberIds.map(id => memberNameMap.get(id)).filter((n): n is string => Boolean(n)),
+    ];
+
+    if (allNames.length === 0) return [];
+
+    const results = await Promise.all(
+        allNames.map(async (name) => {
+            const sp = new URLSearchParams({
+                q: name,
+                type: "track",
+                market: "KR",
+                limit: "10",
+            });
+            const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
+                method: "GET",
+                cache: "no-store",
+            });
+            if (!response.ok) {
+                const body = await response.clone().text();
+                console.warn(`[fetchArtistTrackBatch] Search failed for "${name}": ${response.status} ${body}`);
+                return [] as CandidateTrack[];
+            }
+            const payload = (await response.json()) as SpotifySearchResponse;
+            return (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
+        })
+    );
+
+    return dedupeTracks(results.flat());
 }

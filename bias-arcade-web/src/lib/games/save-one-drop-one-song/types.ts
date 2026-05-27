@@ -38,4 +38,5 @@ export type GameRound = {
 
 export type CreateGameResponse = {
     gameId: string;
+    roundCap?: number;
 };

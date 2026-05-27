@@ -76,15 +76,13 @@ export async function POST(request: NextRequest) {
 
     if (scope.type === "custom") {
         try {
-            const { groupLabels, memberIds } = resolveCustomScope(scope.artistIds);
-
+            const { groupNames, memberIds } = resolveCustomScope(scope.artistIds);
             const tracks = await fetchArtistTrackBatch(request, {
-                groupLabels,
+                groupNames,
                 memberIds,
-                market,
                 variant: session.variant,
             });
-            const roundCap = Math.max(5, groupLabels.length *15);
+            const roundCap = Math.max(5, groupNames.length * 15);
 
             session.pool = tracks;
             session.maxRounds = roundCap;

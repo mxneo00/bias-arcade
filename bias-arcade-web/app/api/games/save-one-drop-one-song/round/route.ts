@@ -95,12 +95,11 @@ export async function POST(request: NextRequest) {
         attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
         attempt += 1
       ) {
-        const { groupLabels, memberIds } = resolveCustomScope(session.settings.scope.artistIds);
+        const { groupNames, memberIds } = resolveCustomScope(session.settings.scope.artistIds);
         const batch = await fetchArtistTrackBatch(request, {
-          groupLabels,
-          memberIds,
-          market: session.settings.market,
-          variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
+            groupNames,
+            memberIds,
+            variant: `...`,
         });
         const poolIds = new Set(session.pool.map((t) => t.id));
         const toAdd = batch.filter(
