@@ -837,6 +837,20 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "wayv-hendery",  spotifyArtistId: "5wrZ59w1ndSBlPeUj2f6Fs", label: "Hendery",  type: "solo", memberSpotifyArtistIds: null, family: "wayv" },
     { id: "wayv-yangyang", spotifyArtistId: "5yyf4YDCKGaa71SC7KRw2L", label: "Yangyang", type: "solo", memberSpotifyArtistIds: null, family: "wayv" },
     // #endregion
+    // #region &Team
+    // ─── &Team ────────────────────────────────────────────────────────────────
+    //&Team
+    {
+        id: "&team",
+        spotifyArtistId: "2xfxRiKxoHl5tI0MKyvqV7",
+        label: "&Team",
+        type: "group",
+        family: "",
+        memberSpotifyArtistIds: [
+            
+        ],
+    },
+    // #endregion
 ];
 
 export function resolveCustomScope(artistId: string[]): { groupNames: string[]; memberIds: string[] } {
