@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
 function base64URLEncode(str: Buffer) {
@@ -9,11 +9,64 @@ function sha256(buffer: Buffer) {
     return crypto.createHash('sha256').update(buffer).digest();
 }
 
-export async function GET() {
+function toCanonicalDevUrl(url: URL): URL {
+  if (process.env.NODE_ENV !== 'development') {
+    return url;
+  }
+
+  url.protocol = 'http:';
+  url.hostname = '127.0.0.1';
+  url.port = '3000';
+
+  return url;
+}
+
+function getSpotifyRedirectUri(request: NextRequest) {
+  const configuredUri = process.env.SPOTIFY_REDIRECT_URI?.trim();
+
+  if (configuredUri) {
+    return toCanonicalDevUrl(new URL(configuredUri)).toString();
+  }
+
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const forwardedHost = request.headers.get('x-forwarded-host');
+
+  if (forwardedProto && forwardedHost) {
+    return toCanonicalDevUrl(new URL(`/api/integrations/spotify/callback`, `${forwardedProto}://${forwardedHost}`)).toString();
+  }
+
+  return toCanonicalDevUrl(new URL('/api/integrations/spotify/callback', request.url)).toString();
+}
+
+function shouldRedirectToCanonicalDevHost(request: NextRequest): boolean {
+  if (process.env.NODE_ENV !== 'development') {
+    return false;
+  }
+
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
+  return host === 'localhost' || host === 'localhost:3000';
+}
+
+export async function GET(request: NextRequest) {
+  if (shouldRedirectToCanonicalDevHost(request)) {
+    const canonicalUrl = new URL(request.url);
+    canonicalUrl.protocol = 'http:';
+    canonicalUrl.hostname = '127.0.0.1';
+    canonicalUrl.port = '3000';
+
+    return NextResponse.redirect(canonicalUrl.toString(), 302);
+  }
+
   const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const redirectUri = process.env.SPOTIFY_REDIRECT_URI;
+  const redirectUri = getSpotifyRedirectUri(request);
   const isProduction = process.env.NODE_ENV === 'production';
-  const scope = ['user-read-private', 'user-read-email'].join(' ');
+  const scope = [
+    'user-read-private',
+    'user-read-email',
+    'streaming',
+    'user-modify-playback-state',
+    'user-read-playback-state',
+  ].join(' ');
   
   const codeVerifier = base64URLEncode(crypto.randomBytes(32));
   const codeChallenge = base64URLEncode(sha256(Buffer.from(codeVerifier)));
@@ -29,10 +82,22 @@ export async function GET() {
   authUrl.searchParams.set('code_challenge_method', 'S256');
   authUrl.searchParams.set('code_challenge', codeChallenge);
 
-  const response = NextResponse.redirect(authUrl.toString());
+  const response = NextResponse.redirect(authUrl.toString(), 302);
 
-  response.cookies.set('spotify_code_verifier', codeVerifier, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
-  response.cookies.set('spotify_auth_state', state, { httpOnly: true, secure: isProduction, sameSite: 'lax' });
+  response.cookies.set('spotify_code_verifier', codeVerifier, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10,
+  });
+  response.cookies.set('spotify_auth_state', state, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10,
+  });
 
   return response;
 }

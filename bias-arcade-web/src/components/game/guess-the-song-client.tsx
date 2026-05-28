@@ -1,153 +1,209 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-import {
-	SpotifyPlaybackProvider,
-	useSpotifyPlayback,
-} from "@/features/spotify/SpotifyPlaybackProvider";
+import { useSpotifyPlayback } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
+import { VolumeControl } from "@/components/game/volume-slider";
+import type {
+	CreateGameResponse,
+	RoundPayload as RoundResponse,
+	RoundTrack,
+} from "@/lib/games/guess-the-song/types";
+import { ArtistModeSelector } from "@/components/game/artist-mode-selector";
+import { ArtistScope } from "@/lib/games/shared/scope";
 
 import styles from "./page.module.css";
 
-type RoundTrack = {
-	id: string;
-	name: string;
-	artists: string[];
-	uri: string;
-	durationMs: number;
-};
-
-type RoundResponse = {
-	tracks: RoundTrack[];
-};
-
-function getRandomIndex(length: number) {
-	return Math.floor(Math.random() * length);
-}
-
-function shuffle(values: string[]) {
-	const array = [...values];
-
-	for (let index = array.length - 1; index > 0; index -= 1) {
-		const swapIndex = Math.floor(Math.random() * (index + 1));
-		[array[index], array[swapIndex]] = [array[swapIndex], array[index]];
-	}
-
-	return array;
-}
-
 function GuessTheSongContent() {
-	const { isReady, error: playbackError, playSnippet } = useSpotifyPlayback();
+	const { 
+		isReady, 
+		error: playbackError, 
+		player, 
+		playSnippet, 
+		pauseSnippet, 
+		isSnippetPlaying, 
+		activeTrackUri 
+	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 
-	const [tracks, setTracks] = useState<RoundTrack[]>([]);
+	const [gameId, setGameId] = useState<string | null>(null);
+
+	const [options, setOptions] = useState<RoundTrack[]>([]);
+	const [answerTrack, setAnswerTrack] = useState<RoundTrack | null>(null);
 	const [answerTrackId, setAnswerTrackId] = useState<string | null>(null);
 	const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
-	const [isPlaying, setIsPlaying] = useState(false);
+
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [requiresSpotifyReconnect, setRequiresSpotifyReconnect] = useState(false);
 	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
 	const [roundNumber, setRoundNumber] = useState(1);
 	const [score, setScore] = useState(0);
 	const [streak, setStreak] = useState(0);
 	const [didSkipRound, setDidSkipRound] = useState(false);
 
-	const answerTrack = useMemo(
-		() => tracks.find((track) => track.id === answerTrackId) ?? null,
-		[tracks, answerTrackId]
-	);
-
-	const options = useMemo(() => shuffle(tracks.map((track) => track.name)), [tracks]);
+	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
+	const [roundCap, setRoundCap] = useState<number>(0);
+	const [showModeSelector, setShowModeSelector] = useState(false);
+	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
 
 	const hasAnswered = selectedTrackId !== null;
-	const isCorrect = hasAnswered && selectedTrackId === answerTrackId;
 	const canContinueToResults = hasAnswered || didSkipRound;
 
-	async function loadRound() {
+	async function createGameSession() {
+		const response = await fetch("/api/games/guess-the-song/game", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ optionsCount: 4 }), // optional
+			cache: "no-store",
+		});
+
+		if (!response.ok) {
+			const body = (await response.json().catch(() => null)) as { error?: string } | null;
+			throw new Error(body?.error ?? "Failed to start game session");
+		}
+
+		const data = (await response.json()) as CreateGameResponse;
+		return data.gameId;
+	}
+
+	async function loadRound(activateGameId?: string) {
 		setIsLoadingRound(true);
 		setErrorMessage(null);
+		setRequiresSpotifyReconnect(false);
 		setSelectedTrackId(null);
 		setDidSkipRound(false);
 
+		const resolvedGameId = activateGameId ?? gameId;
+
+		if (!resolvedGameId) {
+			setErrorMessage("Game session missing. Please start a new game.");
+			setIsLoadingRound(false);
+			return;
+		}
+
 		try {
-			const response = await fetch("/api/games/guess-the-song/round?limit=4", {
+			const response = await fetch("/api/games/guess-the-song/round", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ gameId: resolvedGameId }),
 				cache: "no-store",
 			});
 
 			if (!response.ok) {
-				const body = await response.json().catch(() => null);
-				throw new Error(body?.error ?? "Failed to load round");
+				const body = await response.json().catch(() => null) as {
+					error?: string;
+					details?: unknown;
+					code?: string;
+				} | null;
+
+				if (body?.code === "SPOTIFY_REAUTH_REQUIRED") {
+					setRequiresSpotifyReconnect(true);
+				}
+
+				const details = body?.details
+					? typeof body.details === "string"
+						? body.details
+						: JSON.stringify(body.details)
+					: null;
+
+				throw new Error(details ? `${body?.error ?? "Failed to load round"}: ${details}` : body?.error ?? "Failed to load round");
 			}
 
 			const data = (await response.json()) as RoundResponse;
-
-			if (!data.tracks?.length) {
-				throw new Error("No tracks available for a round");
-			}
-
-			setTracks(data.tracks);
-			const randomTrack = data.tracks[getRandomIndex(data.tracks.length)];
-			setAnswerTrackId(randomTrack.id);
+			setRoundNumber(data.roundNumber);
+			setOptions(data.options);
+			setAnswerTrack(data.answer);
+			setAnswerTrackId(data.answer.id);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to load round";
+
+			if (message === "Spotify re-authorization required") {
+				setRequiresSpotifyReconnect(true);
+			}
+
 			setErrorMessage(message);
-			setTracks([]);
+			setOptions([]);
+			setAnswerTrack(null);
 			setAnswerTrackId(null);
 		} finally {
 			setIsLoadingRound(false);
 		}
 	}
 
-	async function handlePlaySnippet() {
+	async function handleSnippetButtonClick() {
 		if (!answerTrack || !isReady) {
 			return;
 		}
 
-		setIsPlaying(true);
 		setErrorMessage(null);
 
 		try {
+			if (isSnippetPlaying && activeTrackUri === answerTrack.uri) {
+				await pauseSnippet();
+				return;
+			}
+
 			const snippetLength = 8000;
 			const maxStart = Math.max(0, answerTrack.durationMs - snippetLength);
 			const startMs = maxStart === 0 ? 0 : Math.floor(Math.random() * maxStart);
-
 			await playSnippet(answerTrack.uri, startMs, snippetLength);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to play snippet";
 			setErrorMessage(message);
-		} finally {
-			setIsPlaying(false);
 		}
 	}
 
-	function handleGuess(trackName: string) {
+	function handleGuess(trackId: string) {
 		if (hasAnswered) {
 			return;
 		}
 
-		const guessedTrack = tracks.find((track) => track.name === trackName);
-		if (!guessedTrack) {
-			return;
-		}
+		setSelectedTrackId(trackId);
 
-		setSelectedTrackId(guessedTrack.id);
-
-		if (guessedTrack.id === answerTrackId) {
+		if (trackId === answerTrackId) {
 			setScore((currentScore) => currentScore + pointsPerCorrectAnswer);
 			setStreak((currentStreak) => currentStreak + 1);
 		} else {
 			setStreak(0);
 		}
+
+		setView("results");
 	}
 
-	function handleStartGame() {
-		setRoundNumber(1);
+	async function handleStartGame(scope: ArtistScope) {
+		setShowModeSelector(false);
+		setSelectedScope(scope);
 		setScore(0);
 		setStreak(0);
-		setView("in-game");
-		void loadRound();
+		setSelectedTrackId(null);
+		setDidSkipRound(false);
+
+		try{
+			const response = await fetch("/api/games/guess-the-song/game", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ optionsCount: 4, scope }),
+				cache: "no-store",
+			});
+
+			if (!response.ok) {
+				const body = (await response.json().catch(() => null)) as { error?: string } | null;
+				throw new Error(body?.error ?? "Failed to start game session");
+			}
+
+			const data = (await response.json()) as CreateGameResponse & { roundCap?: number };
+			setRoundCap(data.roundCap ?? 0);
+			setGameId(data.gameId);
+			setView("in-game");
+			await loadRound(data.gameId);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "Failed to start game";
+			setErrorMessage(message);
+			setView("setup");
+		}
 	}
 
 	function handleSkipRound() {
@@ -169,15 +225,27 @@ function GuessTheSongContent() {
 	}
 
 	function handleNextRound() {
-		setRoundNumber((currentRound) => currentRound + 1);
 		setView("in-game");
 		void loadRound();
 	}
 
-	function handleEndGame() {
+	async function handleEndGame() {
+		if (gameId) {
+			void fetch(`/api/games/guess-the-song/game?gameId=${encodeURIComponent(gameId)}`, {
+				method: "DELETE",
+				cache: "no-store",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					score,
+					streak,
+				}),
+			});
+		}
+
 		setView("setup");
+		setGameId(null);
 		setRoundNumber(1);
-		setTracks([]);
+		setAnswerTrack(null);
 		setAnswerTrackId(null);
 		setSelectedTrackId(null);
 		setDidSkipRound(false);
@@ -202,16 +270,27 @@ function GuessTheSongContent() {
 					<section className={styles.panel}>
 						<div className={styles.panelHeader}>
 							<h2>Game Setup</h2>
-							<p>Choose your mode (coming soon) and start the game when ready.</p>
+							<p>Choose your mode and start the game when ready.</p>
 						</div>
 						<div className={styles.setupControls}>
 							<label className={styles.modeSelector} htmlFor="game-mode">
 								<span>Mode</span>
-								<select id="game-mode" disabled defaultValue="classic">
-									<option value="classic">Classic (Placeholder)</option>
+								<select
+									id="game-mode"
+									value={gameMode}
+									onChange={(e) => setGameMode(e.target.value as "all-kpop" | "artist-select")}
+								>
+									<option value="all-kpop">All K-Pop</option>
+									<option value="artist-select">Artist Select</option>
 								</select>
 							</label>
-							<button type="button" onClick={handleStartGame} className={styles.primaryButton}>
+							<button type="button" onClick={() => {
+								if (gameMode === "all-kpop") {
+									void handleStartGame({ type: "all-kpop" });
+								} else {
+									setShowModeSelector(true);
+								}
+							}} className={styles.primaryButton}>
 								Start Game
 							</button>
 						</div>
@@ -223,7 +302,7 @@ function GuessTheSongContent() {
 						<div className={styles.topBar}>
 							<div className={styles.statItem}>
 								<span>Round</span>
-								<strong>{roundNumber}</strong>
+								<strong>{roundCap > 0 ? `${roundNumber} / ${roundCap}` : roundNumber}</strong>
 							</div>
 							<div className={styles.statItem}>
 								<span>Timer</span>
@@ -240,17 +319,25 @@ function GuessTheSongContent() {
 						</div>
 
 						<section className={styles.controls}>
-							<button type="button" onClick={loadRound} disabled={isLoadingRound}>
+							<button 
+								type="button" 
+								onClick={() => loadRound()} 
+								disabled={isLoadingRound}
+							>
 								{isLoadingRound ? "Loading Round..." : "Refresh Round"}
 							</button>
 							<button
 								type="button"
-								onClick={handlePlaySnippet}
-								disabled={!isReady || !answerTrack || isPlaying || isLoadingRound}
+								onClick={handleSnippetButtonClick}
+								disabled={!isReady || !answerTrack || isLoadingRound}
 							>
-								{isPlaying ? "Playing..." : "Play Snippet"}
+								{isSnippetPlaying && activeTrackUri === answerTrack?.uri ? "Pause Snippet" : "Play Snippet"}
 							</button>
-							<button type="button" onClick={handleGoToResults} disabled={!canContinueToResults}>
+							<button 
+								type="button" 
+								onClick={handleGoToResults} 
+								disabled={!canContinueToResults}
+							>
 								View Results
 							</button>
 						</section>
@@ -263,25 +350,31 @@ function GuessTheSongContent() {
 									: "Preparing Spotify player..."}
 						</p>
 
+						<VolumeControl player={player} />
+
 						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
+						{requiresSpotifyReconnect ? (
+							<Link href="/api/integrations/spotify/login" className={styles.backLink}>
+								Reconnect Spotify
+							</Link>
+						) : null}
+
 						<section className={styles.options}>
-							{options.map((trackName) => {
-								const track = tracks.find((value) => value.name === trackName);
-								const trackId = track?.id ?? trackName;
-								const isSelected = selectedTrackId === trackId;
+							{options.map((track) => {
+								const isSelected = selectedTrackId === track.id;
 
 								return (
-									<button
-										key={trackId}
-										type="button"
-										className={styles.option}
-										onClick={() => handleGuess(trackName)}
-										disabled={!answerTrack || hasAnswered || didSkipRound}
-										data-selected={isSelected}
-									>
-										{trackName}
-									</button>
+								<button
+									key={track.id}
+									type="button"
+									className={styles.option}
+									onClick={() => handleGuess(track.id)}
+									disabled={!answerTrack || hasAnswered || didSkipRound}
+									data-selected={isSelected}
+								>
+									{track.name}
+								</button>
 								);
 							})}
 						</section>
@@ -336,14 +429,24 @@ function GuessTheSongContent() {
 					</section>
 				) : null}
 			</main>
+
+			{showModeSelector && (
+				<ArtistModeSelector
+					optionsCount={4}
+					onSelect={(scope, cap) => {
+						setRoundCap(cap ?? 0);
+						void handleStartGame(scope);
+					}}
+					onCancel={() => setShowModeSelector(false)}
+					isLoading={isLoadingRound}
+				/>
+			)}
 		</div>
 	);
 }
 
 export default function GuessTheSongClient() {
 	return (
-		<SpotifyPlaybackProvider>
-			<GuessTheSongContent />
-		</SpotifyPlaybackProvider>
+		<GuessTheSongContent />
 	);
 }

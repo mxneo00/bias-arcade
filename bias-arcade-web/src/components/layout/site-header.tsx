@@ -19,6 +19,7 @@ export function SiteHeader({ isLoggedIn }: SiteHeaderProps) {
       <nav className={styles.nav} aria-label="Main navigation">
         <Link href="/">Home</Link>
         <Link href="/games">Games</Link>
+        <Link href="/collection">Collection</Link>
         {isLoggedIn ? (
           <Link href="/profile">Profile</Link>
         ) : (

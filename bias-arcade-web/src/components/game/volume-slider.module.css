@@ -1,0 +1,22 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.slider {
+  width: 180px;
+  accent-color: var(--text-primary);
+}
+
+.value {
+  min-width: 44px;
+  color: var(--text-primary);
+  font-size: 14px;
+  text-align: right;
+}

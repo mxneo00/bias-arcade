@@ -15,16 +15,37 @@ function isAbsoluteUrl(url: string): boolean {
 export async function getSpotifyAccessToken(request: NextRequest): Promise<string> {
     const baseUrl = request.nextUrl.origin;
     const refreshUrl = `${baseUrl}/api/integrations/spotify/refresh`;
-    const response = await fetch(refreshUrl, {
-        method: "POST",
-        headers: {
-            cookie: request.headers.get("cookie") ?? "",
-        },
-        cache: "no-store",
-    });
+    let response: Response;
+
+    try {
+        response = await fetch(refreshUrl, {
+            method: "POST",
+            headers: {
+                cookie: request.headers.get("cookie") ?? "",
+            },
+            cache: "no-store",
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Failed to reach Spotify refresh endpoint: ${message}`);
+    }
+
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to refresh Spotify token: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+        let errorData: { error?: string; code?: string } | null = null;
+
+        try {
+            errorData = await response.json();
+        } catch {
+            errorData = null;
+        }
+
+        if (response.status === 401 && errorData?.code === "SPOTIFY_REAUTH_REQUIRED") {
+            throw new Error("Spotify re-authorization required");
+        }
+
+        throw new Error(
+            `Failed to refresh Spotify token: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`
+        );
     }
     const data: Partial<SpotifyTokenResponse> = await response.json();
     if (!data.access_token) {

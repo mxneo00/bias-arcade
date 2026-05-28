@@ -124,6 +124,7 @@
 }
 
 .actions a,
+.integrationStatus,
 .logoutButton,
 .settingsButton {
     height: 40px;
@@ -141,6 +142,10 @@
 
 .actions a {
     text-decoration: none;
+}
+
+.integrationStatus {
+    cursor: default;
 }
 
 @media (hover: hover) and (pointer: fine) {
