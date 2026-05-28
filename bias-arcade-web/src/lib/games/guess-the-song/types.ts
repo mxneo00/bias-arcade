@@ -1,3 +1,5 @@
+import { ArtistScope } from "../shared/scope";
+
 export type RoundTrack = {
 	id: string;
 	name: string;
@@ -13,6 +15,8 @@ export type GameSettings = {
     market: string;
     seedGenres: string[];
     optionsCount: number;
+	scope: ArtistScope;
+	roundCap: number;
 }
 
 export type RoundPayload = {
@@ -20,3 +24,7 @@ export type RoundPayload = {
     answer: RoundTrack;
     options: RoundTrack[];
 }
+
+export type CreateGameResponse = {
+	gameId: string;
+};

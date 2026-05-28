@@ -21,15 +21,20 @@ type SpotifyTrack = {
 
 type SpotifyRecommendationsResponse = { tracks?: SpotifyTrack[]; };
 type SpotifySearchResponse = { tracks?: { items?: SpotifyTrack[]; }; };
+type SpotifyArtistNameResponse = { artists?: Array<{ id: string; name: string }> };
 type SpotifyArtistsResponse = { artists?: SpotifyArtistDetails[]; };
 
 type CandidateTrack = RoundTrack & { artistIds: string[] };
+
+type SpotifySimplifiedAlbum = { id: string; images: SpotifyImage[]; };
+type SpotifyArtistAlbumsResponse = { items: SpotifySimplifiedAlbum[]; next: string | null; };
+type SpotifyAlbumTracksResponse = { items: SpotifyTrack[]; next: string | null; };
 
 const ALLOWED_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
     "kpop", "kpop", "korean pop", "korean rock",
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
-    ];
+];
 
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
@@ -330,4 +335,70 @@ export async function fetchTrackBatch(
     }
     const prioritizedTracks = await prioritizeKoreanGenreTracks(request, combined);
     return dedupeTracks(prioritizedTracks);
+}
+
+export async function fetchArtistTrackBatch(
+    request: NextRequest,
+    args: {
+        groupNames: string[];
+        memberIds: string[];
+        variant?: string;
+    }
+): Promise<RoundTrack[]> {  
+    const { groupNames, memberIds } = args;
+
+    // Look up names for member IDs only (group names already known from registry)
+    const memberNameMap = new Map<string, string>();
+    if (memberIds.length > 0) {
+        const CHUNK_SIZE = 50;
+        for (let i = 0; i < memberIds.length; i += CHUNK_SIZE) {
+            const chunk = memberIds.slice(i, i + CHUNK_SIZE);
+            const res = await spotifyFetch(request, `/artists?ids=${chunk.join(",")}`, {
+                method: "GET",
+                cache: "no-store",
+            });
+            if (res.ok) {
+                const payload = (await res.json()) as SpotifyArtistNameResponse;
+                for (const artist of payload.artists ?? []) {
+                    if (artist?.id && artist.name) {
+                        memberNameMap.set(artist.id, artist.name);
+                    }
+                }
+            } else {
+                const body = await res.clone().text();
+                console.warn(`[fetchArtistTrackBatch] Artist name lookup failed: ${res.status} ${body}`);
+            }
+        }
+    }
+
+    const allNames = [
+        ...groupNames,
+        ...memberIds.map(id => memberNameMap.get(id)).filter((n): n is string => Boolean(n)),
+    ];
+
+    if (allNames.length === 0) return [];
+
+    const results = await Promise.all(
+        allNames.map(async (name) => {
+            const sp = new URLSearchParams({
+                q: name,
+                type: "track",
+                market: "KR",
+                limit: "10",
+            });
+            const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
+                method: "GET",
+                cache: "no-store",
+            });
+            if (!response.ok) {
+                const body = await response.clone().text();
+                console.warn(`[fetchArtistTrackBatch] Search failed for "${name}": ${response.status} ${body}`);
+                return [] as CandidateTrack[];
+            }
+            const payload = (await response.json()) as SpotifySearchResponse;
+            return (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
+        })
+    );
+
+    return dedupeTracks(results.flat());
 }
