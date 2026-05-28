@@ -3,6 +3,9 @@ import { createSession, deleteSession } from "@/lib/games/guess-the-song/session
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth";
 import { updateUserStats } from "@/lib/collections/updateStats";
+import { fetchArtistTrackBatch } from "@/lib/games/guess-the-song/spotifySource";
+import { resolveCustomScope } from "@/lib/games/shared/artist-registry";
+import { ArtistScope } from "@/lib/games/shared/scope";
 
 const DEFAULT_SEED_GENRES = ["k-pop", "k-rock", "korean-pop", "korean-rock"];
 const DEFAULT_MARKET = "KR";
@@ -21,20 +24,85 @@ function sanitizeSeedGenres(seedGenres: string[] | undefined): string[] {
     return normalized.length > 0 ? normalized : DEFAULT_SEED_GENRES;
 }
 
+function sanitizeScope(raw: unknown): ArtistScope {
+    if (!raw || typeof raw !== "object") return { type: "all-kpop" };
+    const obj = raw as Record<string, unknown>;
+
+    if (obj.type === "artist" || obj.type === "group") {
+        const artistId = typeof obj.artistId === "string" ? obj.artistId : null;
+        const label = typeof obj.label === "string" ? obj.label : null;
+
+        if (artistId && label) {
+            return { type: obj.type, artistId, label };
+        }
+    }
+    if (obj.type === "group+solo") {
+        const artistId = typeof obj.artistId === "string" ? obj.artistId : null;
+        const label = typeof obj.label === "string" ? obj.label : null;
+        const memberArtistIds = Array.isArray(obj.memberArtistIds)
+            ? obj.memberArtistIds.filter((id): id is string => typeof id === "string")
+            : null;
+
+        if (artistId && label && memberArtistIds) {
+            return { type: "group+solo", artistId, label, memberArtistIds };
+        }
+    }
+    if (obj.type === "custom") {
+        const artistIds = Array.isArray(obj.artistIds)
+            ? obj.artistIds.filter((id): id is string => typeof id === "string" && id.length > 0)
+            : null;
+        const label = typeof obj.label === "string" ? obj.label : null;
+        if (artistIds && artistIds.length > 0 && label) {
+            return { type: "custom", artistIds, label };
+        }
+    }
+    return { type: "all-kpop" };
+}
+
 export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as Partial<{
         market: string;
         seedGenres: string[];
         optionsCount: number;
-  }>;
+        scope: unknown;
+    }>;
 
-  const market = (body.market ?? DEFAULT_MARKET).toUpperCase();
-  const seedGenres = sanitizeSeedGenres(body.seedGenres);
-  const optionsCount = Math.min(Math.max(body.optionsCount ?? 4, 2), 10);
+    const market = (body.market ?? DEFAULT_MARKET).toUpperCase();
+    const seedGenres = sanitizeSeedGenres(body.seedGenres);
+    const optionsCount = Math.min(Math.max(body.optionsCount ?? 4, 2), 10);
+    const scope = sanitizeScope(body.scope);
 
-  const session = await createSession({market, seedGenres, optionsCount});
-  return NextResponse.json({ gameId: session.id, settings: session.settings });
+    const session = createSession({ market, seedGenres, optionsCount, scope, roundCap: 0 });
+
+    if (scope.type === "custom") {
+        try {
+            const { groupNames, memberIds } = resolveCustomScope(scope.artistIds);
+            const tracks = await fetchArtistTrackBatch(request, {
+                groupNames,
+                memberIds,
+                variant: session.variant,
+            });
+            const roundCap = Math.max(5, groupNames.length * 15);
+
+            session.pool = tracks;
+            session.maxRounds = roundCap;
+            session.settings.roundCap = roundCap;
+        } catch (error) {
+            deleteSession(session.id);
+            const message = error instanceof Error ? error.message : "Failed to fetch artist discography";
+            const rateLimitMatch = message.match(/Spotify rate limited\. Please retry in (\d+) seconds\./);
+            if (rateLimitMatch) {
+                return NextResponse.json(
+                    { error: message, code: "SPOTIFY_RATE_LIMITED", retryAfterSeconds: Number.parseInt(rateLimitMatch[1], 10) },
+                    { status: 429 }
+                );
+            }
+            return NextResponse.json({ error: message }, { status: 500 });
+        }
+    }
+    return NextResponse.json({ gameId: session.id, settings: session.settings, roundCap: session.maxRounds });
 }
+
 
 export async function DELETE(request: NextRequest) {
     const session = await getServerSession(authOptions);

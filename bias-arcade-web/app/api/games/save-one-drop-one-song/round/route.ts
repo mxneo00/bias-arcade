@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/games/save-one-drop-one-song/sessionStore";
-import { fetchTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySource";
+import { fetchArtistTrackBatch, fetchTrackBatch } from "@/lib/games/save-one-drop-one-song/spotifySource";
 import { dedupeTracks, shuffle } from "@/lib/games/save-one-drop-one-song/helpers";
 import { GameRound, SongA, SongB } from "@/lib/games/save-one-drop-one-song/types";
+import { resolveCustomScope } from "@/lib/games/shared/artist-registry";
 
 const DEFAULT_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
@@ -41,50 +42,75 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    for (
-      let attempt = 0;
-      attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
-      attempt += 1
-    ) {
-      const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
-        market: session.settings.market,
-        seedGenres: session.settings.seedGenres,
-        limit: REFILL_BATCH,
-        defaultSeedGenres: DEFAULT_SEED_GENRES,
-      });
-    
-      const poolIds = new Set(session.pool.map((t) => t.id));
-      const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id)
-      );
+    if (session.maxRounds > 0 && session.roundNumber >= session.maxRounds) {
+      return NextResponse.json({ error: "Maximum rounds reached" }, { status: 400 });
+    }
+    if (session.settings.scope.type === "all-kpop") {
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+        attempt += 1
+      ) {
+        const batch = await fetchTrackBatch(request, {
+          variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
+          market: session.settings.market,
+          seedGenres: session.settings.seedGenres,
+          limit: REFILL_BATCH,
+          defaultSeedGenres: DEFAULT_SEED_GENRES,
+        });
+      
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id)
+        );
 
-      session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+      }
+
+      let fresh = getFresh(session);
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
+        attempt += 1
+      ) {
+        const batch = await fetchTrackBatch(request, {
+          variant: `${session.variant}:${session.roundNumber}:fresh:${attempt}`,
+          market: session.settings.market,
+          seedGenres: session.settings.seedGenres,
+          limit: REFILL_BATCH,
+          defaultSeedGenres: DEFAULT_SEED_GENRES,
+        });
+
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id)
+        );
+
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        fresh = getFresh(session);
+      }
+    } else if (session.settings.scope.type === "custom") {
+      for (
+        let attempt = 0;
+        attempt < MAX_REFILL_ATTEMPTS && session.pool.length < MIN_POOL;
+        attempt += 1
+      ) {
+        const { groupNames, memberIds } = resolveCustomScope(session.settings.scope.artistIds);
+        const batch = await fetchArtistTrackBatch(request, {
+            groupNames,
+            memberIds,
+            variant: `...`,
+        });
+        const poolIds = new Set(session.pool.map((t) => t.id));
+        const toAdd = batch.filter(
+          (t) => !poolIds.has(t.id)
+        );
+        session.pool = dedupeTracks([...session.pool, ...toAdd]);
+        if (getFresh(session).length >= 2) break;
+      }
     }
 
-    let fresh = getFresh(session);
-    for (
-      let attempt = 0;
-      attempt < MAX_REFILL_ATTEMPTS && fresh.length < 2;
-      attempt += 1
-    ) {
-      const batch = await fetchTrackBatch(request, {
-        variant: `${session.variant}:${session.roundNumber}:fresh:${attempt}`,
-        market: session.settings.market,
-        seedGenres: session.settings.seedGenres,
-        limit: REFILL_BATCH,
-        defaultSeedGenres: DEFAULT_SEED_GENRES,
-      });
-
-      const poolIds = new Set(session.pool.map((t) => t.id));
-      const toAdd = batch.filter(
-        (t) => !poolIds.has(t.id)
-      );
-
-      session.pool = dedupeTracks([...session.pool, ...toAdd]);
-      fresh = getFresh(session);
-    }
-
+    const fresh = getFresh(session);
     let candidates = fresh;
     let usedFallback = false;
 

@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import {
-	useSpotifyPlayback,
-} from "@/features/spotify/SpotifyPlaybackProvider";
+import { useSpotifyPlayback } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
 import type {
@@ -13,6 +11,8 @@ import type {
 	RoundPayload as RoundResponse,
 	RoundTrack,
 } from "@/lib/games/guess-the-song/types";
+import { ArtistModeSelector } from "@/components/game/artist-mode-selector";
+import { ArtistScope } from "@/lib/games/shared/scope";
 
 import styles from "./page.module.css";
 
@@ -43,6 +43,11 @@ function GuessTheSongContent() {
 	const [score, setScore] = useState(0);
 	const [streak, setStreak] = useState(0);
 	const [didSkipRound, setDidSkipRound] = useState(false);
+
+	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
+	const [roundCap, setRoundCap] = useState<number>(0);
+	const [showModeSelector, setShowModeSelector] = useState(false);
+	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
 
 	const hasAnswered = selectedTrackId !== null;
 	const canContinueToResults = hasAnswered || didSkipRound;
@@ -168,18 +173,32 @@ function GuessTheSongContent() {
 		setView("results");
 	}
 
-	async function handleStartGame() {
+	async function handleStartGame(scope: ArtistScope) {
+		setShowModeSelector(false);
+		setSelectedScope(scope);
 		setScore(0);
 		setStreak(0);
 		setSelectedTrackId(null);
 		setDidSkipRound(false);
 
 		try{
-			const newGameId = await createGameSession();
-			setGameId(newGameId);
+			const response = await fetch("/api/games/guess-the-song/game", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ optionsCount: 4, scope }),
+				cache: "no-store",
+			});
 
+			if (!response.ok) {
+				const body = (await response.json().catch(() => null)) as { error?: string } | null;
+				throw new Error(body?.error ?? "Failed to start game session");
+			}
+
+			const data = (await response.json()) as CreateGameResponse & { roundCap?: number };
+			setRoundCap(data.roundCap ?? 0);
+			setGameId(data.gameId);
 			setView("in-game");
-			await loadRound(newGameId);
+			await loadRound(data.gameId);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to start game";
 			setErrorMessage(message);
@@ -251,16 +270,27 @@ function GuessTheSongContent() {
 					<section className={styles.panel}>
 						<div className={styles.panelHeader}>
 							<h2>Game Setup</h2>
-							<p>Choose your mode (coming soon) and start the game when ready.</p>
+							<p>Choose your mode and start the game when ready.</p>
 						</div>
 						<div className={styles.setupControls}>
 							<label className={styles.modeSelector} htmlFor="game-mode">
 								<span>Mode</span>
-								<select id="game-mode" disabled defaultValue="classic">
-									<option value="classic">Classic (Placeholder)</option>
+								<select
+									id="game-mode"
+									value={gameMode}
+									onChange={(e) => setGameMode(e.target.value as "all-kpop" | "artist-select")}
+								>
+									<option value="all-kpop">All K-Pop</option>
+									<option value="artist-select">Artist Select</option>
 								</select>
 							</label>
-							<button type="button" onClick={handleStartGame} className={styles.primaryButton}>
+							<button type="button" onClick={() => {
+								if (gameMode === "all-kpop") {
+									void handleStartGame({ type: "all-kpop" });
+								} else {
+									setShowModeSelector(true);
+								}
+							}} className={styles.primaryButton}>
 								Start Game
 							</button>
 						</div>
@@ -272,7 +302,7 @@ function GuessTheSongContent() {
 						<div className={styles.topBar}>
 							<div className={styles.statItem}>
 								<span>Round</span>
-								<strong>{roundNumber}</strong>
+								<strong>{roundCap > 0 ? `${roundNumber} / ${roundCap}` : roundNumber}</strong>
 							</div>
 							<div className={styles.statItem}>
 								<span>Timer</span>
@@ -399,6 +429,18 @@ function GuessTheSongContent() {
 					</section>
 				) : null}
 			</main>
+
+			{showModeSelector && (
+				<ArtistModeSelector
+					optionsCount={4}
+					onSelect={(scope, cap) => {
+						setRoundCap(cap ?? 0);
+						void handleStartGame(scope);
+					}}
+					onCancel={() => setShowModeSelector(false)}
+					isLoading={isLoadingRound}
+				/>
+			)}
 		</div>
 	);
 }
