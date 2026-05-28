@@ -44,6 +44,15 @@ function GuessTheSongContent() {
 	const [streak, setStreak] = useState(0);
 	const [didSkipRound, setDidSkipRound] = useState(false);
 
+	const [lastRoundBreakdown, setLastRoundBreakdown] = useState<{
+		wasCorrect: boolean;
+		wasSkipped: boolean;
+		basePoints: number;
+		streakBonus: number;
+		streakCount: number;
+		total: number;
+	} | null>(null);
+
 	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
 	const [roundCap, setRoundCap] = useState<number>(0);
 	const [showModeSelector, setShowModeSelector] = useState(false);
@@ -163,12 +172,26 @@ function GuessTheSongContent() {
 
 		setSelectedTrackId(trackId);
 
-		if (trackId === answerTrackId) {
-			setScore((currentScore) => currentScore + pointsPerCorrectAnswer);
-			setStreak((currentStreak) => currentStreak + 1);
+		const isCorrect = trackId === answerTrackId;
+		const newStreak = isCorrect ? streak + 1 : 0;
+		const base = isCorrect ? pointsPerCorrectAnswer : 0;
+		const streakBonus = newStreak >= 2 ? (newStreak - 1) * 10 : 0;
+
+		if (isCorrect) {
+			setScore((currentScore) => currentScore + base + streakBonus);
+			setStreak(newStreak);
 		} else {
 			setStreak(0);
 		}
+
+		setLastRoundBreakdown({
+			wasCorrect: isCorrect,
+			wasSkipped: false,
+			basePoints: base,
+			streakBonus,
+			streakCount: newStreak,
+			total: base + streakBonus,
+		});
 
 		setView("results");
 	}
@@ -180,6 +203,7 @@ function GuessTheSongContent() {
 		setStreak(0);
 		setSelectedTrackId(null);
 		setDidSkipRound(false);
+		setLastRoundBreakdown(null);
 
 		try{
 			const response = await fetch("/api/games/guess-the-song/game", {
@@ -213,6 +237,14 @@ function GuessTheSongContent() {
 
 		setStreak(0);
 		setDidSkipRound(true);
+		setLastRoundBreakdown({
+			wasCorrect: false,
+			wasSkipped: true,
+			basePoints: 0,
+			streakBonus: 0,
+			streakCount: 0,
+			total: 0,
+		});
 		setView("results");
 	}
 
@@ -410,12 +442,27 @@ function GuessTheSongContent() {
 
 						<section className={styles.pointsBreakdown}>
 							<h3>Points Breakdown</h3>
-							<p>Detailed points and bonus calculations will be implemented here.</p>
-							<ul>
-								<li>Round base points: Placeholder</li>
-								<li>Time bonus: Placeholder</li>
-								<li>Streak bonus: Placeholder</li>
-							</ul>
+							{lastRoundBreakdown ? (
+								<>
+									<ul>
+										<li className={styles.breakdownRow}>
+											<span>Base points</span>
+											<span>{lastRoundBreakdown.wasSkipped ? "Skipped" : lastRoundBreakdown.wasCorrect ? `+${lastRoundBreakdown.basePoints}` : "Incorrect"}</span>
+										</li>
+										<li className={styles.breakdownRow}>
+											<span>Streak bonus{lastRoundBreakdown.streakCount >= 2 ? ` (×${lastRoundBreakdown.streakCount})` : ""}</span>
+											<span>{lastRoundBreakdown.streakBonus > 0 ? `+${lastRoundBreakdown.streakBonus}` : "—"}</span>
+										</li>
+										<li className={`${styles.breakdownRow} ${styles.breakdownTotal}`}>
+											<span>Round total</span>
+											<span>+{lastRoundBreakdown.total}</span>
+										</li>
+									</ul>
+									<p className={styles.runningScore}>Session score: <strong>{score}</strong></p>
+								</>
+							) : (
+								<p>Complete a round to see your points breakdown.</p>
+							)}
 						</section>
 
 						<section className={styles.controls}>

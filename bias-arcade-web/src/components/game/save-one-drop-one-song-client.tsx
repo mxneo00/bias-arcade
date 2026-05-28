@@ -28,6 +28,7 @@ function SaveOneDropOneSongContent() {
 		activeTrackUri,
 	} = useSpotifyPlayback();
 	const pointsPerSelection = 5;
+	const pointsPerSkip = 3;
 
 	const [gameId, setGameId] = useState<string | null>(null);
 	const [currentPair, setCurrentPair] = useState<{ songA: SongA; songB: SongB } | null>(null);
@@ -145,6 +146,13 @@ function SaveOneDropOneSongContent() {
 			const message = error instanceof Error ? error.message : "Failed to play snippet";
 			setErrorMessage(message);
 		}
+	}
+
+	function handleCantChoose() {
+		if (isLoadingRound) return;
+		setSelectedTrackId("cant-choose");
+		setScore((prev) => Math.max(0, prev - pointsPerSkip));
+		setView("results");
 	}
 
 	function handleSelectTrack(trackId: string) {
@@ -357,6 +365,16 @@ function SaveOneDropOneSongContent() {
 											</div>
 										</div>
 									</section>
+									<div className={styles.cantChooseRow}>
+										<button
+											type="button"
+											className={styles.cantChooseButton}
+											onClick={handleCantChoose}
+											disabled={isLoadingRound}
+										>
+											I Can&apos;t Choose ({-pointsPerSkip} pts)
+										</button>
+									</div>
 								</>
 							) : null}
 						</section>
@@ -374,7 +392,7 @@ function SaveOneDropOneSongContent() {
 								<div className={styles.songInfo}>
 									<span className={styles.songName}>{currentPair?.songA.name}</span>
 									<span className={styles.artistName}>{currentPair?.songA.artists.join(", ")}</span>
-									<span className={styles.resultLabel}>{selectedTrackId === currentPair?.songA.id ? "Saved" : "Dropped"}</span>
+									<span className={styles.resultLabel}>{selectedTrackId === "cant-choose" ? "Skipped" : selectedTrackId === currentPair?.songA.id ? "Saved" : "Dropped"}</span>
 								</div>
 							</div>
 							<div className={styles.resultSong}>
@@ -382,7 +400,7 @@ function SaveOneDropOneSongContent() {
 								<div className={styles.songInfo}>
 									<span className={styles.songName}>{currentPair?.songB.name}</span>
 									<span className={styles.artistName}>{currentPair?.songB.artists.join(", ")}</span>
-									<span className={styles.resultLabel}>{selectedTrackId === currentPair?.songB.id ? "Saved" : "Dropped"}</span>
+									<span className={styles.resultLabel}>{selectedTrackId === "cant-choose" ? "Skipped" : selectedTrackId === currentPair?.songB.id ? "Saved" : "Dropped"}</span>
 								</div>
 							</div>
 						</section>
