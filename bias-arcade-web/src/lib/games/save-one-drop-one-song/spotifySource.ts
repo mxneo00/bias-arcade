@@ -34,7 +34,21 @@ const ALLOWED_SEED_GENRES = [
     "k-pop", "k-rock", "korean-pop", "korean-rock", 
     "kpop", "kpop", "korean pop", "korean rock",
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
-    ];
+];
+
+const UNWANTED_TRACK_PATTERNS = [
+    /karaoke/i,
+    /instrumental/i,
+    /cover/i,
+    /remix/i,
+    /live/i,
+    /acoustic/i,
+];
+
+function isUnwantedTrack(name: string): boolean {
+    return UNWANTED_TRACK_PATTERNS.some((pattern) => pattern.test(name));
+}
+
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
     const normalized = Array.from(
@@ -72,7 +86,6 @@ function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
 
 async function readBodySafe(response: Response) {
     try {
-        // Use a cloned response so diagnostics do not consume the original body.
         return await response.clone().text();
     } catch {
         return "";
@@ -305,7 +318,9 @@ export async function fetchArtistTrackBatch(
         variant?: string;
     }
 ): Promise<(SongA | SongB)[]> { 
-    const { groupNames, memberIds } = args;
+    const { groupNames, memberIds, variant } = args;
+
+    const variantNum = (variant ?? "").split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7) || 7;
 
     // Look up names for member IDs only (group names already known from registry)
     const memberNameMap = new Map<string, string>();
@@ -341,10 +356,11 @@ export async function fetchArtistTrackBatch(
     const results = await Promise.all(
         allNames.map(async (name) => {
             const sp = new URLSearchParams({
-                q: name,
+                q: `artist:"${name}"`,
                 type: "track",
                 market: "KR",
                 limit: "10",
+                offset: String(variantNum % 800),
             });
             const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
                 method: "GET",
@@ -356,7 +372,12 @@ export async function fetchArtistTrackBatch(
                 return [] as CandidateTrack[];
             }
             const payload = (await response.json()) as SpotifySearchResponse;
-            return (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
+            const nameLower = name.trim().toLowerCase();
+            return (payload.tracks?.items ?? [])
+                .filter((t) => t.artists.some((a) => a.name.toLowerCase() === nameLower))
+                .filter(track => !isUnwantedTrack(track.name))
+                .map(normalizeTrack)
+                .filter(Boolean) as CandidateTrack[];
         })
     );
 

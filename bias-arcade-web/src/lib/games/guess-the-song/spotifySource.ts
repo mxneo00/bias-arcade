@@ -36,6 +36,19 @@ const ALLOWED_SEED_GENRES = [
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
 ];
 
+const UNWANTED_TRACK_PATTERNS = [
+    /karaoke/i,
+    /instrumental/i,
+    /cover/i,
+    /remix/i,
+    /live/i,
+    /acoustic/i,
+];
+
+function isUnwantedTrack(name: string): boolean {
+    return UNWANTED_TRACK_PATTERNS.some((pattern) => pattern.test(name));
+}
+
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
     const normalized = Array.from(
@@ -345,9 +358,10 @@ export async function fetchArtistTrackBatch(
         variant?: string;
     }
 ): Promise<RoundTrack[]> {  
-    const { groupNames, memberIds } = args;
+    const { groupNames, memberIds, variant } = args;
 
-    // Look up names for member IDs only (group names already known from registry)
+    const variantNum = (variant ?? "").split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7) || 7;
+
     const memberNameMap = new Map<string, string>();
     if (memberIds.length > 0) {
         const CHUNK_SIZE = 50;
@@ -381,10 +395,11 @@ export async function fetchArtistTrackBatch(
     const results = await Promise.all(
         allNames.map(async (name) => {
             const sp = new URLSearchParams({
-                q: name,
+                q: `artist:"${name}"`,
                 type: "track",
                 market: "KR",
                 limit: "10",
+                offset: String(variantNum % 800),
             });
             const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
                 method: "GET",
@@ -396,7 +411,12 @@ export async function fetchArtistTrackBatch(
                 return [] as CandidateTrack[];
             }
             const payload = (await response.json()) as SpotifySearchResponse;
-            return (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
+            const nameLower = name.toLowerCase();
+            return (payload.tracks?.items ?? [])
+                .filter((t) => t.artists.some((a) => a.name.toLowerCase() === nameLower))
+                .filter((t) => !isUnwantedTrack(t.name))
+                .map(normalizeTrack)
+                .filter(Boolean) as CandidateTrack[];
         })
     );
 
