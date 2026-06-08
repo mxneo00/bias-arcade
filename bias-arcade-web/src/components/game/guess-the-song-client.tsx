@@ -38,7 +38,7 @@ function GuessTheSongContent() {
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
 
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
-	const [requiresSpotifyReconnect, setRequiresSpotifyReconnect] = useState(false);
+	const [requireSpotifyReconnect, setRequireSpotifyReconnect] = useState(false);
 	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
 	const [roundNumber, setRoundNumber] = useState(1);
 	const [score, setScore] = useState(0);
@@ -84,7 +84,7 @@ function GuessTheSongContent() {
 	async function loadRound(activateGameId?: string) {
 		setIsLoadingRound(true);
 		setErrorMessage(null);
-		setRequiresSpotifyReconnect(false);
+		setRequireSpotifyReconnect(false);
 		setSelectedTrackId(null);
 		setHintsUsed({ artist: false, album: false });
 		setDidSkipRound(false);
@@ -113,7 +113,7 @@ function GuessTheSongContent() {
 				} | null;
 
 				if (body?.code === "SPOTIFY_REAUTH_REQUIRED") {
-					setRequiresSpotifyReconnect(true);
+					setRequireSpotifyReconnect(true);
 				}
 
 				const details = body?.details
@@ -134,13 +134,14 @@ function GuessTheSongContent() {
 			const message = error instanceof Error ? error.message : "Failed to load round";
 
 			if (message === "Spotify re-authorization required") {
-				setRequiresSpotifyReconnect(true);
+				setRequireSpotifyReconnect(true);
 			}
 
 			setErrorMessage(message);
 			setOptions([]);
 			setAnswerTrack(null);
 			setAnswerTrackId(null);
+			setView("setup");
 		} finally {
 			setIsLoadingRound(false);
 		}
@@ -345,6 +346,14 @@ function GuessTheSongContent() {
 								Start Game
 							</button>
 						</div>
+
+						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+						
+						{requireSpotifyReconnect ? (
+							<Link href="/api/integrations/spotify/login" className={styles.backLink}>
+								Reconnect Spotify
+							</Link>
+						) : null}
 					</section>
 				) : null}
 
@@ -401,7 +410,7 @@ function GuessTheSongContent() {
 
 						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
-						{requiresSpotifyReconnect ? (
+						{requireSpotifyReconnect ? (
 							<Link href="/api/integrations/spotify/login" className={styles.backLink}>
 								Reconnect Spotify
 							</Link>
