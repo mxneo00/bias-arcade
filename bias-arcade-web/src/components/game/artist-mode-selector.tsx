@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { artistRegistry } from "@/lib/games/shared/artist-registry";
 import { computeRoundCap } from "@/lib/games/shared/round-cap";
 import { ArtistScope } from "@/lib/games/shared/scope";
 import styles from "./artist-mode-selector.module.css";
 
-interface SelectionState {
-  includeSolos: boolean;
-}
+type RegistryEntry = typeof artistRegistry[number];
 
 interface ArtistModeSelectorProps {
     optionsCount?: number;
@@ -23,41 +21,54 @@ export function ArtistModeSelector({
     onCancel,
     isLoading,
 }: ArtistModeSelectorProps) {
-    const [selections, setSelections] = useState<Map<string, SelectionState>>(new Map());
+    const [selections, setSelections] = useState<Set<string>>(new Set());
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const [search, setSearch] = useState("");
+
+    const groups = useMemo(() => artistRegistry.filter(e => e.type === "group"), []);
+
+    const membersByFamily = useMemo(() => {
+        const map = new Map<string, RegistryEntry[]>();
+        for (const entry of artistRegistry) {
+            if (entry.type === "solo" && entry.family) {
+                if (!map.has(entry.family)) map.set(entry.family, []);
+                map.get(entry.family)!.push(entry);
+            }
+        }
+        return map;
+    }, []);
+
+    const standaloneSolos = useMemo(() => artistRegistry.filter(e => e.type === "solo" && !e.family), []);
+
+    const searchTerm = search.trim().toLowerCase();
+    const filteredEntries = useMemo(() => {
+        if (!searchTerm) return null;
+        return artistRegistry.filter(e => 
+            e.label.toLowerCase().includes(searchTerm) ||
+            e.aliases?.some(alias => alias.toLowerCase().includes(searchTerm))
+        );
+    }, [searchTerm]);
 
     function toggleEntry(id: string) {
       setSelections(prev => {
-        const next = new Map(prev);
-        if (next.has(id)) {
-          next.delete(id);
-        } else {
-          next.set(id, { includeSolos: false });
-        }
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
         return next;
       });
     }
 
-    function toggleSolos(id: string) {
-      setSelections(prev => {
-        const next = new Map(prev);
-        const current = next.get(id);
-        if (current) next.set(id, { ...current, includeSolos: !current.includeSolos });
+    function toggleExpanded(id: string) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
         return next;
       });
     }
 
     function estimateRounds(): number {
-      const tracksPerArtist = 150; // very rough estimate
-      let total = 0;
-      for (const [id, sel] of selections.entries()) {
-        const entry = artistRegistry.find(e => e.id === id);
-        if (!entry) continue;
-        total += tracksPerArtist;
-        if (sel.includeSolos && entry.memberSpotifyArtistIds?.length) {
-          total += tracksPerArtist * entry.memberSpotifyArtistIds.filter(Boolean).length;
-        }
-      }
-      return computeRoundCap(Math.max(total, 1), optionsCount);
+      return computeRoundCap(Math.max(selections.size * 150, 1), optionsCount);
     }
 
     function handleConfirm() {
@@ -66,65 +77,99 @@ export function ArtistModeSelector({
       const artistIds: string[] = [];
       const labels: string[] = [];
 
-      for (const [id, sel] of selections.entries()) {
+      for (const id of selections) {
         const entry = artistRegistry.find(e => e.id === id);
         if (!entry) continue;
         artistIds.push(entry.spotifyArtistId);
-        if (sel.includeSolos && entry.memberSpotifyArtistIds) {
-          artistIds.push(...entry.memberSpotifyArtistIds.filter(Boolean));
-        }
         labels.push(entry.label);
       }
       const scope: ArtistScope = { type: "custom", artistIds, label: labels.join(", ") };
       onSelect(scope, estimateRounds());
-      onCancel(); // Close the selector after confirming
+      onCancel();
+    }
+
+    function renderEntry(entry: RegistryEntry, indent = false) {
+        const isSelected = selections.has(entry.id);
+        return (
+            <div
+                key={entry.id}
+                className={`${styles.listRow} ${isSelected ? styles.listRowSelected : ""} ${indent ? styles.indent : ""}`}
+            >
+                <label className={styles.checkLabel}>
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleEntry(entry.id)}
+                        className={styles.checkbox}
+                    />
+                    <span className={styles.entryLabel}>{entry.label}</span>
+                </label>
+            </div>
+        );
     }
 
     return (
         <div className={styles.overlay}>
             <div className={styles.modal}>
                 <h2 className={styles.title}>Select Groups / Artists</h2>
-                <p className={styles.subtitle}>
-                    Check the groups to include. Toggle &quot;+solos&quot; to also include member solo songs.
-                </p>
+
+                <input
+                    type="text"
+                    placeholder="Search artists..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className={styles.searchInput}
+                />
 
                 <div className={styles.list}>
-                    {artistRegistry.map((entry) => {
-                        const isSelected = selections.has(entry.id);
-                        const sel = selections.get(entry.id);
-                        const hasSolos = (entry.memberSpotifyArtistIds?.filter(Boolean).length ?? 0) > 0;
-                        return (
-                            <div
-                                key={entry.id}
-                                className={`${styles.listRow} ${isSelected ? styles.listRowSelected : ""}`}
-                            >
-                                <label className={styles.checkLabel}>
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => toggleEntry(entry.id)}
-                                        className={styles.checkbox}
-                                    />
-                                    <span className={styles.entryLabel}>{entry.label}</span>
-                                </label>
-                                {isSelected && hasSolos && (
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleSolos(entry.id)}
-                                        className={`${styles.soloToggle} ${sel?.includeSolos ? styles.soloToggleOn : ""}`}
-                                    >
-                                        +solos
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    })}
+                    {filteredEntries ? (
+                        filteredEntries.length === 0 ? (
+                            <div className={styles.emptyState}>No results for &ldquo;{search}&rdquo;</div>
+                        ) : (
+                            filteredEntries.map(entry => renderEntry(entry))
+                        )
+                    ) : (
+                        <>
+                            {groups.map(group => {
+                                const isExpanded = expandedGroups.has(group.id);
+                                const isSelected = selections.has(group.id);
+                                const members = membersByFamily.get(group.id) ?? [];
+                                return (
+                                    <div key={group.id}>
+                                        <div className={`${styles.listRow} ${isSelected ? styles.listRowSelected : ""}`}>
+                                            <label className={styles.checkLabel}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleEntry(group.id)}
+                                                    className={styles.checkbox}
+                                                />
+                                                <span className={styles.entryLabel}>{group.label}</span>
+                                            </label>
+                                            {members.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleExpanded(group.id)}
+                                                    className={styles.expandBtn}
+                                                    aria-label={isExpanded ? "Collapse members" : "Expand members"}
+                                                >
+                                                    {isExpanded ? "▲" : "▼"}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {isExpanded && members.map(m => renderEntry(m, true))}
+                                    </div>
+                                );
+                            })}
+                            {standaloneSolos.map(entry => renderEntry(entry))}
+                        </>
+                    )}
                 </div>
 
                 {selections.size > 0 && (
                     <div className={styles.preview}>
                         <span className={styles.previewCount}>
-                            {selections.size} selected Â· ~{estimateRounds()} rounds
+                            {selections.size} selected · ~{estimateRounds()} rounds
                         </span>
                     </div>
                 )}

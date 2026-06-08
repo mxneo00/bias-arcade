@@ -29,15 +29,6 @@ export default async function Home() {
                 <Link href="/games" className={styles.primary}>
                   Play Now
                 </Link>
-                {lastPlayed ? (
-                  <Link href={lastPlayed.href} className={styles.secondary}>
-                    Continue: {lastPlayed.title} · {lastPlayed.modeLabel}
-                  </Link>
-                ) : (
-                  <Link href="/games" className={styles.secondary}>
-                    Continue Last Played (when available)
-                  </Link>
-                )}
               </div>
             </section>
 
