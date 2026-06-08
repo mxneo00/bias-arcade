@@ -5,7 +5,7 @@ import { dedupeTracks } from "./helpers";
 
 type SpotifyArtist = { id?: string; name: string };
 type SpotifyImage = { url: string };
-type SpotifyAlbum = { images?: SpotifyImage[] };
+type SpotifyAlbum = { name?: string; images?: SpotifyImage[] };
 type SpotifyArtistDetails = { id: string; genres?: string[] };
 
 type SpotifyTrack = {
@@ -82,6 +82,7 @@ function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
 		durationMs: track.duration_ms,
 		previewUrl: track.preview_url,
 		albumImageUrl: track.album?.images?.[0]?.url ?? null,
+		albumName: track.album?.name ?? null,
 		externalUrl: track.external_urls?.spotify ?? null,
 	};
 }
@@ -170,6 +171,7 @@ async function prioritizeKoreanGenreTracks(
             durationMs: track.durationMs,
             previewUrl: track.previewUrl,
             albumImageUrl: track.albumImageUrl,
+            albumName: track.albumName,
             externalUrl: track.externalUrl,
         };
 

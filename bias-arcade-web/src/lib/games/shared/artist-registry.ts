@@ -11,6 +11,8 @@ type ArtistRegistry = {
 
 export const artistRegistry: ArtistRegistry[] = [
 
+    // IMPORTANT NOTE: Label MUST be the exact same as the artist name on Spotify
+
     // #region 2NE1
     // ─── 2NE1 ─────────────────────────────────────────────────────────────────
     {
@@ -746,7 +748,7 @@ export const artistRegistry: ArtistRegistry[] = [
     {
         id: "txt",
         spotifyArtistId: "0ghlgldX5Dd6720Q3qFyQB",
-        label: "TXT",
+        label: "TOMORROW X TOGETHER",
         type: "group",
         memberSpotifyArtistIds: [
             "2Mo2yHjmrDRZW7yRuJwR2w", // Yeonjun

@@ -342,7 +342,17 @@ function SaveOneDropOneSongContent() {
 												: "Play Right Song"}
 										</button>
 									</section>
-
+							<div className={styles.cantChooseRow}>
+								<button
+									type="button"
+									className={styles.cantChooseButton}
+									onClick={handleCantChoose}
+									disabled={isLoadingRound}
+								>
+									<span>🤷</span>
+									<span>I Can&apos;t Choose ({-pointsPerSkip} pts)</span>
+								</button>
+							</div>
 									<section className={styles.songPair}>
 										<div
 											className={`${styles.songOption} ${selectedTrackId === currentPair.songA.id ? styles.selected : ""}`}
@@ -365,16 +375,6 @@ function SaveOneDropOneSongContent() {
 											</div>
 										</div>
 									</section>
-									<div className={styles.cantChooseRow}>
-										<button
-											type="button"
-											className={styles.cantChooseButton}
-											onClick={handleCantChoose}
-											disabled={isLoadingRound}
-										>
-											I Can&apos;t Choose ({-pointsPerSkip} pts)
-										</button>
-									</div>
 								</>
 							) : null}
 						</section>
