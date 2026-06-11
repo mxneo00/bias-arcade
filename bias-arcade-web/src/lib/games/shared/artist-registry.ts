@@ -59,6 +59,15 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "aespa-ningning", spotifyArtistId: "5t1uryofgueHrjrryqX8vM", label: "Ningning", type: "solo", family: "aespa" },
 
     // #endregion
+    // #region ALPHA DRIVE ONE
+    // ─── ALPHA DRIVE ONE ───────────────────────────────────────────────────────────────
+    {
+        id: "alpha-drive-one",
+        spotifyArtistId: "1Sal7hVz3weo0mvYZPiWHT",
+        label: "ALPHA DRIVE ONE",
+        type: "group",
+    },
+    // #endregion
     // region AMPERSANDONE
     // ─── AMPERS&ONE ────────────────────────────────────────────────────────────────
     {
@@ -120,6 +129,15 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "bap-zelo",         spotifyArtistId: "2N5L6zU0bi3q8AdJpNW1z3", label: "Zelo",         type: "solo", family: "bap" },
 
     // #endregion
+    // #region BABYMONSTER
+    // ─── BABYMONSTER ────────────────────────────────────────────────────────────────
+    {
+        id: "babymonster",
+        spotifyArtistId: "1SIocsqdEefUTE6XKGUiVS",
+        label: "BABYMONSTER",
+        type: "group",
+    },
+    // #endregion
     // #region BIGBANG
     // ─── BIGBANG ──────────────────────────────────────────────────────────────
     {
@@ -167,6 +185,24 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "bts-v",        spotifyArtistId: "3JsHnjpbhX4SnySpvpa9DK", label: "V",        type: "solo", family: "bts" },
     { id: "bts-jungkook", spotifyArtistId: "6HaGTQPmzraVmaVxvz6EUc", label: "Jungkook", type: "solo", family: "bts" },
 
+    // #endregion
+    // #region Cortis
+    // ─── Cortis ───────────────────────────────────────────────────────────────
+    {
+        id: "cortis",
+        spotifyArtistId: "1ebt9HnXdyYA6KgLXr1n4P",
+        label: "Cortis",
+        type: "group",
+    },
+    // #endregion
+    // #region E'last
+    // ─── E'LAST ───────────────────────────────────────────────────────────────
+    {
+        id: "elast",
+        spotifyArtistId: "0NztgA9b1KEJLjLVqMwd9y",
+        label: "E'LAST",
+        type: "group",
+    },
     // #endregion
     // #region ENHYPEN
     // ─── ENHYPEN ──────────────────────────────────────────────────────────────
@@ -345,6 +381,15 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "mamamoo-hwasa",    spotifyArtistId: "7bmYpVgQub656uNTu6qGNQ", label: "Hwasa",    type: "solo", family: "mamamoo" },
 
     // #endregion
+    // #region MEOVV
+    // ─── MEOVV ───────────────────────────────────────────────────────────────
+    {
+        id: "meovv",
+        spotifyArtistId: "08hHTBHlv0WRXWlyrsb6Kv",
+        label: "MEOVV",
+        type: "group",
+    },
+    // #endregion
     // #region MONSTA X
     // ─── MONSTA X ─────────────────────────────────────────────────────────────
     {
@@ -439,6 +484,33 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "newjeans-danielle", spotifyArtistId: "3BNhPTiKBExlE45mYeC9YY", label: "Danielle", type: "solo", family: "newjeans" },
 
     // #endregion
+    // #region Nu'est
+    // ─── Nu'est ───────────────────────────────────────────────────────────────
+    {
+        id: "nu'est",
+        spotifyArtistId: "1iQfn1B8V25iQoolQakyAZ",
+        label: "NU'EST",
+        type: "group",
+    },
+    // #endregion
+    // #region ONEUS
+    // ─── ONEUS ───────────────────────────────────────────────────────────────
+    {
+        id: "oneus",
+        spotifyArtistId: "5nqjYt2a7r8sH9mLhXh3vP",
+        label: "ONEUS",
+        type: "group",
+    },
+    // #endregion
+    // #region P1Harmony
+    // ─── P1Harmony ─────────────────────────────────────────────────────────────
+    {
+        id: "p1harmony",
+        spotifyArtistId: "3JjvsPeGMbDJqsphe2z8xU",
+        label: "P1Harmony",
+        type: "group",
+    },
+    // #endregion
     // #region Red Velvet
     // ─── Red Velvet ───────────────────────────────────────────────────────────
     {
@@ -454,6 +526,15 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "red-velvet-joy",    spotifyArtistId: "0sYpJ0nCC8AlDrZFeAA7ub", label: "Joy",    type: "solo", family: "red-velvet" },
     { id: "red-velvet-yeri",   spotifyArtistId: "4xzwjGxzfKglU0cNW4q4l1", label: "Yeri",   type: "solo", family: "red-velvet" },
 
+    // #endregion
+    // #region RIIZE
+    // ─── RIIZE ───────────────────────────────────────────────────────────────
+    {
+        id: "riize",
+        spotifyArtistId: "2jOm3cYujQx6o1dxuiuqaX",
+        label: "RIIZE",
+        type: "group",
+    },
     // #endregion
     // #region SEVENTEEN
     // ─── SEVENTEEN ────────────────────────────────────────────────────────────
@@ -605,6 +686,33 @@ export const artistRegistry: ArtistRegistry[] = [
     { id: "wayv-xiaojun",  spotifyArtistId: "51kPKCSzbLwEQFFwhfS4R7", label: "Xiaojun",  type: "solo", family: "wayv" },
     { id: "wayv-hendery",  spotifyArtistId: "5wrZ59w1ndSBlPeUj2f6Fs", label: "Hendery",  type: "solo", family: "wayv" },
     { id: "wayv-yangyang", spotifyArtistId: "5yyf4YDCKGaa71SC7KRw2L", label: "Yangyang", type: "solo", family: "wayv" },
+    // #endregion
+    // #region xdinary heroes
+    // ─── xdinary heroes ────────────────────────────────────────────────────────
+    {
+        id: "xdinary-heroes",
+        spotifyArtistId: "1khChLj7REGqjM043PlYyn",
+        label: "xdinary heroes",
+        type: "group",
+    },
+    // #endregion
+    // #region xikers
+    // ─── xikers ───────────────────────────────────────────────────────────────
+    {
+        id: "xikers",
+        spotifyArtistId: "6QHP8St0MzfNDqjKpwtMht",
+        label: "xikers",
+        type: "group",
+    },
+    // #endregion
+    // #region XLov
+    // ─── XLov ────────────────────────────────────────────────────────────────
+    {
+        id: "xlov",
+        spotifyArtistId: "2b8aDRZFgUGWiUGchpWsyC",
+        label: "XLov",
+        type: "group",
+    },
     // #endregion
     // #region &Team
     // ─── &Team ────────────────────────────────────────────────────────────────
