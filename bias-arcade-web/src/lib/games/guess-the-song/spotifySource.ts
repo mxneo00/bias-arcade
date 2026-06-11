@@ -5,7 +5,7 @@ import { dedupeTracks } from "./helpers";
 
 type SpotifyArtist = { id?: string; name: string };
 type SpotifyImage = { url: string };
-type SpotifyAlbum = { images?: SpotifyImage[] };
+type SpotifyAlbum = { name?: string; images?: SpotifyImage[] };
 type SpotifyArtistDetails = { id: string; genres?: string[] };
 
 type SpotifyTrack = {
@@ -35,6 +35,19 @@ const ALLOWED_SEED_GENRES = [
     "kpop", "kpop", "korean pop", "korean rock",
     "kpop boy group", "kpop girl group", "korean idol", "korean band",
 ];
+
+const UNWANTED_TRACK_PATTERNS = [
+    /karaoke/i,
+    /instrumental/i,
+    /cover/i,
+    /remix/i,
+    /live/i,
+    /acoustic/i,
+];
+
+function isUnwantedTrack(name: string): boolean {
+    return UNWANTED_TRACK_PATTERNS.some((pattern) => pattern.test(name));
+}
 
 function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
     const allowed = new Set(ALLOWED_SEED_GENRES);
@@ -69,6 +82,7 @@ function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
 		durationMs: track.duration_ms,
 		previewUrl: track.preview_url,
 		albumImageUrl: track.album?.images?.[0]?.url ?? null,
+		albumName: track.album?.name ?? null,
 		externalUrl: track.external_urls?.spotify ?? null,
 	};
 }
@@ -157,6 +171,7 @@ async function prioritizeKoreanGenreTracks(
             durationMs: track.durationMs,
             previewUrl: track.previewUrl,
             albumImageUrl: track.albumImageUrl,
+            albumName: track.albumName,
             externalUrl: track.externalUrl,
         };
 
@@ -345,9 +360,10 @@ export async function fetchArtistTrackBatch(
         variant?: string;
     }
 ): Promise<RoundTrack[]> {  
-    const { groupNames, memberIds } = args;
+    const { groupNames, memberIds, variant } = args;
 
-    // Look up names for member IDs only (group names already known from registry)
+    const variantNum = (variant ?? "").split("").reduce((acc, ch) => (acc * 31 + ch.charCodeAt(0)) >>> 0, 7) || 7;
+
     const memberNameMap = new Map<string, string>();
     if (memberIds.length > 0) {
         const CHUNK_SIZE = 50;
@@ -380,11 +396,13 @@ export async function fetchArtistTrackBatch(
 
     const results = await Promise.all(
         allNames.map(async (name) => {
+            const offset = variantNum % 800;
             const sp = new URLSearchParams({
-                q: name,
+                q: `artist:"${name}"`,
                 type: "track",
                 market: "KR",
                 limit: "10",
+                offset: String(offset),
             });
             const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
                 method: "GET",
@@ -395,8 +413,27 @@ export async function fetchArtistTrackBatch(
                 console.warn(`[fetchArtistTrackBatch] Search failed for "${name}": ${response.status} ${body}`);
                 return [] as CandidateTrack[];
             }
-            const payload = (await response.json()) as SpotifySearchResponse;
-            return (payload.tracks?.items ?? []).map(normalizeTrack).filter(Boolean) as CandidateTrack[];
+            let payload = (await response.json()) as SpotifySearchResponse;
+            const nameLower = name.toLowerCase();
+
+            // If offset overshot the catalog, retry from 0
+            if (offset > 0 && (payload.tracks?.items ?? []).filter(t => t.artists.some(a => a.name.toLowerCase() === nameLower)).length === 0) {
+                const sp0 = new URLSearchParams({
+                    q: `artist:"${name}"`,
+                    type: "track",
+                    market: "KR",
+                    limit: "10",
+                    offset: "0",
+                });
+                const fallback = await spotifyFetch(request, `/search?${sp0.toString()}`, { method: "GET", cache: "no-store" });
+                if (fallback.ok) payload = (await fallback.json()) as SpotifySearchResponse;
+            }
+
+            return (payload.tracks?.items ?? [])
+                .filter((t) => t.artists.some((a) => a.name.toLowerCase() === nameLower))
+                .filter((t) => !isUnwantedTrack(t.name))
+                .map(normalizeTrack)
+                .filter(Boolean) as CandidateTrack[];
         })
     );
 

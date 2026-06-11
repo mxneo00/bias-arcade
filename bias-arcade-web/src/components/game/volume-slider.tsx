@@ -2,18 +2,15 @@ import { useEffect, useState } from "react";
 
 import styles from "./volume-slider.module.css";
 
-const saved = typeof window !== "undefined"
-  ? localStorage.getItem("kpop_game_volume")
-  : null;
-
-const DEFAULT_VOLUME = saved ? Number(saved) : 0.25;
-
 type SpotifyPlayerInstance = {
   setVolume: (volume: number) => Promise<void>;
 };
 
 export function VolumeControl({ player }: { player: SpotifyPlayerInstance | null }) {
-  const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  const [volume, setVolume] = useState(() => {
+    const saved = typeof window !== "undefined" ? localStorage.getItem("kpop_game_volume") : null;
+    return saved ? Number(saved) : 0.25;
+  });
 
   useEffect(() => {
     if (player) {

@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         const batch = await fetchArtistTrackBatch(request, {
             groupNames,
             memberIds,
-            variant: `...`,
+            variant: `${session.variant}:${session.roundNumber}:prefill:${attempt}`,
         });
         const poolIds = new Set(session.pool.map((t) => t.id));
         const toAdd = batch.filter(

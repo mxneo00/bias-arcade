@@ -8,6 +8,7 @@ export type RoundTrack = {
 	durationMs: number;
 	previewUrl: string | null;
 	albumImageUrl: string | null;
+	albumName: string | null;
 	externalUrl: string | null;
 };
 

@@ -27,6 +27,8 @@ function GuessTheSongContent() {
 		activeTrackUri 
 	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
+	const incorrectPenalty = 50;
+	const HINT_COST = 20;
 
 	const [gameId, setGameId] = useState<string | null>(null);
 
@@ -37,17 +39,29 @@ function GuessTheSongContent() {
 	const [isLoadingRound, setIsLoadingRound] = useState(false);
 
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
-	const [requiresSpotifyReconnect, setRequiresSpotifyReconnect] = useState(false);
+	const [requireSpotifyReconnect, setRequireSpotifyReconnect] = useState(false);
 	const [view, setView] = useState<"setup" | "in-game" | "results">("setup");
 	const [roundNumber, setRoundNumber] = useState(1);
 	const [score, setScore] = useState(0);
 	const [streak, setStreak] = useState(0);
 	const [didSkipRound, setDidSkipRound] = useState(false);
 
+	const [lastRoundBreakdown, setLastRoundBreakdown] = useState<{
+		wasCorrect: boolean;
+		wasSkipped: boolean;
+		basePoints: number;
+		streakBonus: number;
+		streakCount: number;
+		total: number;
+		hintPenalty?: number;
+		incorrectPenalty?: number;
+	} | null>(null);
+
 	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
 	const [roundCap, setRoundCap] = useState<number>(0);
 	const [showModeSelector, setShowModeSelector] = useState(false);
 	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
+	const [hintsUsed, setHintsUsed] = useState<{ artist: boolean; album: boolean }>({ artist: false, album: false });
 
 	const hasAnswered = selectedTrackId !== null;
 	const canContinueToResults = hasAnswered || didSkipRound;
@@ -72,8 +86,9 @@ function GuessTheSongContent() {
 	async function loadRound(activateGameId?: string) {
 		setIsLoadingRound(true);
 		setErrorMessage(null);
-		setRequiresSpotifyReconnect(false);
+		setRequireSpotifyReconnect(false);
 		setSelectedTrackId(null);
+		setHintsUsed({ artist: false, album: false });
 		setDidSkipRound(false);
 
 		const resolvedGameId = activateGameId ?? gameId;
@@ -100,7 +115,7 @@ function GuessTheSongContent() {
 				} | null;
 
 				if (body?.code === "SPOTIFY_REAUTH_REQUIRED") {
-					setRequiresSpotifyReconnect(true);
+					setRequireSpotifyReconnect(true);
 				}
 
 				const details = body?.details
@@ -121,13 +136,14 @@ function GuessTheSongContent() {
 			const message = error instanceof Error ? error.message : "Failed to load round";
 
 			if (message === "Spotify re-authorization required") {
-				setRequiresSpotifyReconnect(true);
+				setRequireSpotifyReconnect(true);
 			}
 
 			setErrorMessage(message);
 			setOptions([]);
 			setAnswerTrack(null);
 			setAnswerTrackId(null);
+			setView("setup");
 		} finally {
 			setIsLoadingRound(false);
 		}
@@ -163,12 +179,31 @@ function GuessTheSongContent() {
 
 		setSelectedTrackId(trackId);
 
-		if (trackId === answerTrackId) {
-			setScore((currentScore) => currentScore + pointsPerCorrectAnswer);
-			setStreak((currentStreak) => currentStreak + 1);
+		const isCorrect = trackId === answerTrackId;
+		const newStreak = isCorrect ? streak + 1 : 0;
+		const base = isCorrect ? pointsPerCorrectAnswer : 0;
+		const streakBonus = newStreak >= 2 ? (newStreak - 1) * 10 : 0;
+		const hintPenalty = (hintsUsed.artist ? HINT_COST : 0) + (hintsUsed.album ? HINT_COST : 0);
+
+		if (isCorrect) {
+			setScore((currentScore) => currentScore + base + streakBonus);
+			setStreak(newStreak);
 		} else {
+			setScore((currentScore) => currentScore - incorrectPenalty);
 			setStreak(0);
 		}
+
+		const wrongPenalty = isCorrect ? 0 : incorrectPenalty;
+		setLastRoundBreakdown({
+			wasCorrect: isCorrect,
+			wasSkipped: false,
+			basePoints: base,
+			streakBonus,
+			streakCount: newStreak,
+			hintPenalty,
+			incorrectPenalty: wrongPenalty,
+			total: base + streakBonus - hintPenalty - wrongPenalty,
+		});
 
 		setView("results");
 	}
@@ -180,6 +215,7 @@ function GuessTheSongContent() {
 		setStreak(0);
 		setSelectedTrackId(null);
 		setDidSkipRound(false);
+		setLastRoundBreakdown(null);
 
 		try{
 			const response = await fetch("/api/games/guess-the-song/game", {
@@ -211,9 +247,30 @@ function GuessTheSongContent() {
 			return;
 		}
 
+		const hintPenalty = (hintsUsed.artist ? HINT_COST : 0) + (hintsUsed.album ? HINT_COST : 0);
+		
 		setStreak(0);
+		setHintsUsed({ artist: false, album: false });
 		setDidSkipRound(true);
+		setLastRoundBreakdown({
+			wasCorrect: false,
+			wasSkipped: true,
+			basePoints: 0,
+			streakBonus: 0,
+			streakCount: 0,
+			hintPenalty: hintPenalty,
+			total: -hintPenalty,
+		});
 		setView("results");
+	}
+
+	function handleUseHint(type: "artist" | "album") {
+		if (hintsUsed[type] || hasAnswered || didSkipRound || !answerTrack) {
+			return;
+		}
+
+		setHintsUsed((prev) => ({ ...prev, [type]: true }));
+		setScore((currentScore) => currentScore - HINT_COST);
 	}
 
 	function handleGoToResults() {
@@ -294,6 +351,14 @@ function GuessTheSongContent() {
 								Start Game
 							</button>
 						</div>
+
+						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+						
+						{requireSpotifyReconnect ? (
+							<Link href="/api/integrations/spotify/login" className={styles.backLink}>
+								Reconnect Spotify
+							</Link>
+						) : null}
 					</section>
 				) : null}
 
@@ -303,10 +368,6 @@ function GuessTheSongContent() {
 							<div className={styles.statItem}>
 								<span>Round</span>
 								<strong>{roundCap > 0 ? `${roundNumber} / ${roundCap}` : roundNumber}</strong>
-							</div>
-							<div className={styles.statItem}>
-								<span>Timer</span>
-								<strong>--:--</strong>
 							</div>
 							<div className={styles.statItem}>
 								<span>Score</span>
@@ -354,7 +415,7 @@ function GuessTheSongContent() {
 
 						{errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
 
-						{requiresSpotifyReconnect ? (
+						{requireSpotifyReconnect ? (
 							<Link href="/api/integrations/spotify/login" className={styles.backLink}>
 								Reconnect Spotify
 							</Link>
@@ -382,7 +443,24 @@ function GuessTheSongContent() {
 						<section className={styles.placeholders}>
 							<div className={styles.placeholderBox}>
 								<h3>Hints</h3>
-								<p>Hint options will be added here.</p>
+							<button
+								type="button"
+								onClick={() => handleUseHint("artist")}
+								disabled={hintsUsed.artist || hasAnswered || didSkipRound || !answerTrack}
+							>
+								{hintsUsed.artist
+									? `Artist: ${answerTrack?.artists.join(", ")}`
+									: `Reveal Artist (−${HINT_COST} pts)`}
+							</button>
+							<button
+								type="button"
+								onClick={() => handleUseHint("album")}
+								disabled={hintsUsed.album || hasAnswered || didSkipRound || !answerTrack}
+							>
+								{hintsUsed.album
+									? `Album: ${answerTrack?.albumName ?? "Unknown"}`
+									: `Reveal Album (−${HINT_COST} pts)`}
+							</button>
 							</div>
 							<div className={styles.placeholderBox}>
 								<h3>Skip</h3>
@@ -410,12 +488,39 @@ function GuessTheSongContent() {
 
 						<section className={styles.pointsBreakdown}>
 							<h3>Points Breakdown</h3>
-							<p>Detailed points and bonus calculations will be implemented here.</p>
-							<ul>
-								<li>Round base points: Placeholder</li>
-								<li>Time bonus: Placeholder</li>
-								<li>Streak bonus: Placeholder</li>
-							</ul>
+							{lastRoundBreakdown ? (
+								<>
+									<ul>
+										<li className={styles.breakdownRow}>
+											<span>Base points</span>
+											<span>{lastRoundBreakdown.wasSkipped ? "Skipped" : lastRoundBreakdown.wasCorrect ? `+${lastRoundBreakdown.basePoints}` : "Incorrect"}</span>
+										</li>
+										<li className={styles.breakdownRow}>
+											<span>Streak bonus{lastRoundBreakdown.streakCount >= 2 ? ` (×${lastRoundBreakdown.streakCount})` : ""}</span>
+											<span>{lastRoundBreakdown.streakBonus > 0 ? `+${lastRoundBreakdown.streakBonus}` : "—"}</span>
+										</li>
+										{(lastRoundBreakdown.incorrectPenalty ?? 0) > 0 && (
+											<li className={styles.breakdownRow}>
+												<span>Wrong answer</span>
+												<span>−{lastRoundBreakdown.incorrectPenalty}</span>
+											</li>
+										)}
+										{(lastRoundBreakdown.hintPenalty ?? 0) > 0 && (
+											<li className={styles.breakdownRow}>
+												<span>Hint penalty</span>
+												<span>−{lastRoundBreakdown.hintPenalty}</span>
+											</li>
+										)}
+										<li className={`${styles.breakdownRow} ${styles.breakdownTotal}`}>
+											<span>Round total</span>
+											<span>{lastRoundBreakdown.total >= 0 ? `+${lastRoundBreakdown.total}` : `${lastRoundBreakdown.total}`}</span>
+										</li>
+									</ul>
+									<p className={styles.runningScore}>Session score: <strong>{score}</strong></p>
+								</>
+							) : (
+								<p>Complete a round to see your points breakdown.</p>
+							)}
 						</section>
 
 						<section className={styles.controls}>
