@@ -396,12 +396,13 @@ export async function fetchArtistTrackBatch(
 
     const results = await Promise.all(
         allNames.map(async (name) => {
+            const offset = variantNum % 800;
             const sp = new URLSearchParams({
                 q: `artist:"${name}"`,
                 type: "track",
                 market: "KR",
                 limit: "10",
-                offset: String(variantNum % 800),
+                offset: String(offset),
             });
             const response = await spotifyFetch(request, `/search?${sp.toString()}`, {
                 method: "GET",
@@ -412,8 +413,22 @@ export async function fetchArtistTrackBatch(
                 console.warn(`[fetchArtistTrackBatch] Search failed for "${name}": ${response.status} ${body}`);
                 return [] as CandidateTrack[];
             }
-            const payload = (await response.json()) as SpotifySearchResponse;
+            let payload = (await response.json()) as SpotifySearchResponse;
             const nameLower = name.toLowerCase();
+
+            // If offset overshot the catalog, retry from 0
+            if (offset > 0 && (payload.tracks?.items ?? []).filter(t => t.artists.some(a => a.name.toLowerCase() === nameLower)).length === 0) {
+                const sp0 = new URLSearchParams({
+                    q: `artist:"${name}"`,
+                    type: "track",
+                    market: "KR",
+                    limit: "10",
+                    offset: "0",
+                });
+                const fallback = await spotifyFetch(request, `/search?${sp0.toString()}`, { method: "GET", cache: "no-store" });
+                if (fallback.ok) payload = (await fallback.json()) as SpotifySearchResponse;
+            }
+
             return (payload.tracks?.items ?? [])
                 .filter((t) => t.artists.some((a) => a.name.toLowerCase() === nameLower))
                 .filter((t) => !isUnwantedTrack(t.name))
