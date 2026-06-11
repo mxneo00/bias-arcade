@@ -27,6 +27,7 @@ function GuessTheSongContent() {
 		activeTrackUri 
 	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
+	const incorrectPenalty = 50;
 	const HINT_COST = 20;
 
 	const [gameId, setGameId] = useState<string | null>(null);
@@ -53,6 +54,7 @@ function GuessTheSongContent() {
 		streakCount: number;
 		total: number;
 		hintPenalty?: number;
+		incorrectPenalty?: number;
 	} | null>(null);
 
 	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
@@ -187,9 +189,11 @@ function GuessTheSongContent() {
 			setScore((currentScore) => currentScore + base + streakBonus);
 			setStreak(newStreak);
 		} else {
+			setScore((currentScore) => currentScore - incorrectPenalty);
 			setStreak(0);
 		}
 
+		const wrongPenalty = isCorrect ? 0 : incorrectPenalty;
 		setLastRoundBreakdown({
 			wasCorrect: isCorrect,
 			wasSkipped: false,
@@ -197,7 +201,8 @@ function GuessTheSongContent() {
 			streakBonus,
 			streakCount: newStreak,
 			hintPenalty,
-			total: base + streakBonus - hintPenalty,
+			incorrectPenalty: wrongPenalty,
+			total: base + streakBonus - hintPenalty - wrongPenalty,
 		});
 
 		setView("results");
@@ -494,6 +499,12 @@ function GuessTheSongContent() {
 											<span>Streak bonus{lastRoundBreakdown.streakCount >= 2 ? ` (×${lastRoundBreakdown.streakCount})` : ""}</span>
 											<span>{lastRoundBreakdown.streakBonus > 0 ? `+${lastRoundBreakdown.streakBonus}` : "—"}</span>
 										</li>
+										{(lastRoundBreakdown.incorrectPenalty ?? 0) > 0 && (
+											<li className={styles.breakdownRow}>
+												<span>Wrong answer</span>
+												<span>−{lastRoundBreakdown.incorrectPenalty}</span>
+											</li>
+										)}
 										{(lastRoundBreakdown.hintPenalty ?? 0) > 0 && (
 											<li className={styles.breakdownRow}>
 												<span>Hint penalty</span>
