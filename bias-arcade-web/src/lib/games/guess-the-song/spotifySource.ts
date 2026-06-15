@@ -2,69 +2,16 @@ import { NextRequest } from "next/server";
 import { spotifyFetch } from "@/lib/spotify/client";
 import { RoundTrack } from "./types"
 import { dedupeTracks } from "./helpers";
-
-type SpotifyArtist = { id?: string; name: string };
-type SpotifyImage = { url: string };
-type SpotifyAlbum = { name?: string; images?: SpotifyImage[] };
-type SpotifyArtistDetails = { id: string; genres?: string[] };
-
-type SpotifyTrack = {
-	id: string;
-	name: string;
-	uri: string;
-	duration_ms: number;
-	preview_url: string | null;
-	external_urls?: { spotify?: string; };
-	artists: SpotifyArtist[];
-	album?: SpotifyAlbum;
-};
-
-type SpotifyRecommendationsResponse = { tracks?: SpotifyTrack[]; };
-type SpotifySearchResponse = { tracks?: { items?: SpotifyTrack[]; }; };
-type SpotifyArtistNameResponse = { artists?: Array<{ id: string; name: string }> };
-type SpotifyArtistsResponse = { artists?: SpotifyArtistDetails[]; };
+import { SpotifyTrack, 
+    SpotifyRecommendationsResponse, 
+    SpotifySearchResponse, 
+    SpotifyArtistNameResponse, 
+    SpotifyArtistsResponse, 
+    ALLOWED_SEED_GENRES 
+} from "../shared/types";
+import { isUnwantedTrack, sanitizeSeedGenres, readBodySafe, isInvalidLimitError, getRetryAfterSeconds } from "../shared/utility-functions";
 
 type CandidateTrack = RoundTrack & { artistIds: string[] };
-
-type SpotifySimplifiedAlbum = { id: string; images: SpotifyImage[]; };
-type SpotifyArtistAlbumsResponse = { items: SpotifySimplifiedAlbum[]; next: string | null; };
-type SpotifyAlbumTracksResponse = { items: SpotifyTrack[]; next: string | null; };
-
-const ALLOWED_SEED_GENRES = [
-    "k-pop", "k-rock", "korean-pop", "korean-rock", 
-    "kpop", "kpop", "korean pop", "korean rock",
-    "kpop boy group", "kpop girl group", "korean idol", "korean band",
-];
-
-const UNWANTED_TRACK_PATTERNS = [
-    /karaoke/i,
-    /instrumental/i,
-    /cover/i,
-    /remix/i,
-    /live/i,
-    /acoustic/i,
-];
-
-function isUnwantedTrack(name: string): boolean {
-    return UNWANTED_TRACK_PATTERNS.some((pattern) => pattern.test(name));
-}
-
-function sanitizeSeedGenres(seedGenres: string[], fallback: string[]): string[] {
-    const allowed = new Set(ALLOWED_SEED_GENRES);
-    const normalized = Array.from(
-        new Set(seedGenres.map((genre) => genre.trim().toLowerCase()).filter((genre) => allowed.has(genre)))
-    );
-
-    if (normalized.length > 0) {
-        return normalized;
-    }
-
-    const fallbackNormalized = Array.from(
-        new Set(fallback.map((genre) => genre.trim().toLowerCase()).filter((genre) => allowed.has(genre)))
-    );
-
-    return fallbackNormalized.length > 0 ? fallbackNormalized : ["k-pop", "k-rock"];
-}
 
 function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
 	if (!track.id || !track.uri || !track.name || !track.artists?.length) {
@@ -85,32 +32,6 @@ function normalizeTrack(track: SpotifyTrack): CandidateTrack | null {
 		albumName: track.album?.name ?? null,
 		externalUrl: track.external_urls?.spotify ?? null,
 	};
-}
-
-async function readBodySafe(response: Response) {
-    try {
-        return await response.clone().text();
-    } catch {
-        return "";
-    }
-}
-
-function isInvalidLimitError(body: string) {
-    return body.toLowerCase().includes("invalid limit");
-}
-
-function getRetryAfterSeconds(response: Response): number {
-    const raw = response.headers.get("retry-after");
-    if (!raw) {
-        return 60;
-    }
-
-    const parsed = Number.parseInt(raw, 10);
-    if (Number.isFinite(parsed) && parsed > 0) {
-        return parsed;
-    }
-
-    return 60;
 }
 
 async function fetchArtistGenresMap(request: NextRequest, artistIds: string[]): Promise<Map<string, string[]>> {
