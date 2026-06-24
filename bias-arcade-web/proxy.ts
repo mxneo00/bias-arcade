@@ -16,7 +16,7 @@ function shouldRedirectToCanonicalHost(request: NextRequest): boolean {
     return hostHeader === 'localhost:3000' || hostHeader === 'localhost';
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     if (!shouldRedirectToCanonicalHost(request)) {
         return NextResponse.next();
     }
