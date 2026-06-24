@@ -30,6 +30,10 @@ export default async function Home() {
                   Play Now
                 </Link>
               </div>
+              <p className={styles.hint}>
+                Make sure Spotify is connected before playing.{" "}
+                <Link href="/profile">Check your profile</Link>.
+              </p>
             </section>
 
             <section className={styles.dashboardSecondary}>

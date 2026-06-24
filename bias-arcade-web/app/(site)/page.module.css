@@ -168,6 +168,12 @@ a.secondary {
   color: var(--text-secondary);
 }
 
+.hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .secondaryLink {
   display: inline-flex;
   width: fit-content;
