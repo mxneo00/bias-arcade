@@ -24,6 +24,11 @@ export default async function Profile() {
         gameHistory: [],
     };
     const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+        redirect('/login?callbackUrl=/profile');
+    }
+
     const userDocRef = adminDb.collection("users").doc(session.user.id);
     const userDocSnap = await userDocRef.get();
     const userData = userDocSnap.data();
@@ -31,11 +36,7 @@ export default async function Profile() {
     const claimedBadges = Array.isArray(userData?.claimedBadges) ? userData.claimedBadges : [];
     const totalScore = stats.gameHistory.reduce((sum, game) => sum + game.score, 0);
     const collectionItems = evaluateCollection(stats, claimedBadges);
-    const unlockedOrClaimed = collectionItems.filter(item => item.badge.status === "unlocked" || item.badge.status === "claimed").length;   
-
-    if (!session?.user) {
-        redirect('/login?callbackUrl=/profile');
-    }
+    const unlockedOrClaimed = collectionItems.filter(item => item.badge.status === "unlocked" || item.badge.status === "claimed").length;
 
     const displayName = session.user.name ?? 'Display name placeholder';
     const email = session.user.email ?? 'No email available';
