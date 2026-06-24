@@ -7,7 +7,6 @@ export type SongA = {
     artistIds: string[];
     uri: string;
     duration_ms: number;
-    //albumName: string;
     albumImageUrl: string | null;
 }
 
@@ -18,7 +17,6 @@ export type SongB = {
     artistIds: string[];
     uri: string;
     duration_ms: number;
-    //albumName: string;
     albumImageUrl: string | null;
 }
 

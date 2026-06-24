@@ -6,15 +6,9 @@ import { useState } from "react";
 import { useSpotifyPlayback } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
-import type {
-	CreateGameResponse,
-	GameRound as RoundResponse,
-	SongA,
-	SongB,
-} from "@/lib/games/save-one-drop-one-song/types";
+import type { CreateGameResponse, GameRound as RoundResponse, SongA, SongB } from "@/lib/games/save-one-drop-one-song/types";
 import { ArtistModeSelector } from "@/components/game/artist-mode-selector";
 import { ArtistScope } from "@/lib/games/shared/scope";
-
 import styles from "./page.module.css";
 
 function SaveOneDropOneSongContent() {
@@ -43,9 +37,6 @@ function SaveOneDropOneSongContent() {
 	const [roundCap, setRoundCap] = useState<number>(0);
 	const [showModeSelector, setShowModeSelector] = useState(false);
 	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
-
-	const hasAnswered = selectedTrackId !== null;
-	const canContinue = hasAnswered && !isLoadingRound;
 
 	async function createGameSession(scope: ArtistScope) {
 		const response = await fetch("/api/games/save-one-drop-one-song/game", {
@@ -187,11 +178,6 @@ function SaveOneDropOneSongContent() {
 		}
 	}
 
-	function handleGoToResults() {
-		if (!canContinue) return;
-		setView("results");
-	}
-
 	function handleNextRound() {
 		setView("in-game");
 		void loadRound();
@@ -284,16 +270,6 @@ function SaveOneDropOneSongContent() {
 								<strong>{score}</strong>
 							</div>
 						</div>
-
-						<section className={styles.controls}>
-							<button
-								type="button"
-								onClick={handleGoToResults}
-								disabled={!canContinue}
-							>
-								View Results
-							</button>
-						</section>
 
 						<p className={styles.status}>
 							{playbackError

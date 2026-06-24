@@ -6,14 +6,9 @@ import { useState } from "react";
 import { useSpotifyPlayback } from "@/features/spotify/SpotifyPlaybackProvider";
 import { SiteHeader } from "@/components/layout/site-header";
 import { VolumeControl } from "@/components/game/volume-slider";
-import type {
-	CreateGameResponse,
-	RoundPayload as RoundResponse,
-	RoundTrack,
-} from "@/lib/games/guess-the-song/types";
+import type { CreateGameResponse, RoundPayload as RoundResponse, RoundTrack } from "@/lib/games/guess-the-song/types";
 import { ArtistModeSelector } from "@/components/game/artist-mode-selector";
 import { ArtistScope } from "@/lib/games/shared/scope";
-
 import styles from "./page.module.css";
 
 function GuessTheSongContent() {
@@ -28,7 +23,7 @@ function GuessTheSongContent() {
 	} = useSpotifyPlayback();
 	const pointsPerCorrectAnswer = 100;
 	const incorrectPenalty = 50;
-	const HINT_COST = 20;
+	const hintCost = 20;
 
 	const [gameId, setGameId] = useState<string | null>(null);
 
@@ -57,7 +52,6 @@ function GuessTheSongContent() {
 		incorrectPenalty?: number;
 	} | null>(null);
 
-	const [selectedScope, setSelectedScope] = useState<ArtistScope | null>(null);
 	const [roundCap, setRoundCap] = useState<number>(0);
 	const [showModeSelector, setShowModeSelector] = useState(false);
 	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
@@ -66,11 +60,11 @@ function GuessTheSongContent() {
 	const hasAnswered = selectedTrackId !== null;
 	const canContinueToResults = hasAnswered || didSkipRound;
 
-	async function createGameSession() {
+	async function createGameSession(scope: ArtistScope) {
 		const response = await fetch("/api/games/guess-the-song/game", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ optionsCount: 4 }), // optional
+			body: JSON.stringify({ optionsCount: 4, scope }),
 			cache: "no-store",
 		});
 
@@ -80,7 +74,7 @@ function GuessTheSongContent() {
 		}
 
 		const data = (await response.json()) as CreateGameResponse;
-		return data.gameId;
+		return data;
 	}
 
 	async function loadRound(activateGameId?: string) {
@@ -183,7 +177,7 @@ function GuessTheSongContent() {
 		const newStreak = isCorrect ? streak + 1 : 0;
 		const base = isCorrect ? pointsPerCorrectAnswer : 0;
 		const streakBonus = newStreak >= 2 ? (newStreak - 1) * 10 : 0;
-		const hintPenalty = (hintsUsed.artist ? HINT_COST : 0) + (hintsUsed.album ? HINT_COST : 0);
+		const hintPenalty = (hintsUsed.artist ? hintCost : 0) + (hintsUsed.album ? hintCost : 0);
 
 		if (isCorrect) {
 			setScore((currentScore) => currentScore + base + streakBonus);
@@ -210,7 +204,6 @@ function GuessTheSongContent() {
 
 	async function handleStartGame(scope: ArtistScope) {
 		setShowModeSelector(false);
-		setSelectedScope(scope);
 		setScore(0);
 		setStreak(0);
 		setSelectedTrackId(null);
@@ -218,20 +211,7 @@ function GuessTheSongContent() {
 		setLastRoundBreakdown(null);
 
 		try{
-			const response = await fetch("/api/games/guess-the-song/game", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ optionsCount: 4, scope }),
-				cache: "no-store",
-			});
-
-			if (!response.ok) {
-				const body = (await response.json().catch(() => null)) as { error?: string } | null;
-				throw new Error(body?.error ?? "Failed to start game session");
-			}
-
-			const data = (await response.json()) as CreateGameResponse & { roundCap?: number };
-			setRoundCap(data.roundCap ?? 0);
+			const data = await createGameSession(scope);
 			setGameId(data.gameId);
 			setView("in-game");
 			await loadRound(data.gameId);
@@ -247,7 +227,7 @@ function GuessTheSongContent() {
 			return;
 		}
 
-		const hintPenalty = (hintsUsed.artist ? HINT_COST : 0) + (hintsUsed.album ? HINT_COST : 0);
+		const hintPenalty = (hintsUsed.artist ? hintCost : 0) + (hintsUsed.album ? hintCost : 0);
 		
 		setStreak(0);
 		setHintsUsed({ artist: false, album: false });
@@ -270,7 +250,7 @@ function GuessTheSongContent() {
 		}
 
 		setHintsUsed((prev) => ({ ...prev, [type]: true }));
-		setScore((currentScore) => currentScore - HINT_COST);
+		setScore((currentScore) => currentScore - hintCost);
 	}
 
 	function handleGoToResults() {
@@ -450,7 +430,7 @@ function GuessTheSongContent() {
 							>
 								{hintsUsed.artist
 									? `Artist: ${answerTrack?.artists.join(", ")}`
-									: `Reveal Artist (−${HINT_COST} pts)`}
+									: `Reveal Artist (−${hintCost} pts)`}
 							</button>
 							<button
 								type="button"
@@ -459,7 +439,7 @@ function GuessTheSongContent() {
 							>
 								{hintsUsed.album
 									? `Album: ${answerTrack?.albumName ?? "Unknown"}`
-									: `Reveal Album (−${HINT_COST} pts)`}
+									: `Reveal Album (−${hintCost} pts)`}
 							</button>
 							</div>
 							<div className={styles.placeholderBox}>
