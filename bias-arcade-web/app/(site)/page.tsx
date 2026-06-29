@@ -31,7 +31,7 @@ export default async function Home() {
                 </Link>
               </div>
               <p className={styles.hint}>
-                Make sure Spotify is connected before playing.{" "}
+                Make sure Spotify is connected before playing. NOTE: a PREMIUM Spotify subscription is required.{" "}
                 <Link href="/profile">Check your profile</Link>.
               </p>
             </section>
@@ -74,6 +74,9 @@ export default async function Home() {
                 Bias Arcade is a lightweight way to jump into short K-pop
                 challenges. Compete in minutes, discover songs you love, and
                 keep the fun going.
+              </p>
+              <p className={styles.hint}>
+                A PREMIUM Spotify subscription is required to play.
               </p>
               <div className={styles.ctas}>
                 <Link href="/login" className={styles.primary}>
