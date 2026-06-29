@@ -37,16 +37,16 @@ export const unlockRules: UnlockRule[] = [
     {
         id: "3_game_streak",
         description: "Achieve a 3-game winning streak",
-        isMet: (stats) => stats.currentStreak >= 3,
+        isMet: (stats) => stats.longestStreak >= 3,
     },
     {
         id: "5_game_streak",
         description: "Achieve a 5-game winning streak",
-        isMet: (stats) => stats.currentStreak >= 5,
+        isMet: (stats) => stats.longestStreak >= 5,
     },
     {
         id: "10_game_streak",
         description: "Achieve a 10-game winning streak",
-        isMet: (stats) => stats.currentStreak >= 10,
+        isMet: (stats) => stats.longestStreak >= 10,
     },
 ];

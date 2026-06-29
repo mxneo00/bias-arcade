@@ -3,14 +3,29 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/server/auth";
+import { adminDb } from "@/server/firebase-admin";
 import { SiteHeader } from "@/components/layout/site-header";
+import { GameStats } from "@/lib/collections/types";
+
+const GAME_LABELS: Record<string, string> = {
+  guess_the_song: "Guess the Song",
+  save_one_drop_one_song: "Save One Drop One Song",
+};
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
   const isLoggedIn = Boolean(session?.user);
-  const lastPlayed = null as
-    | { title: string; modeLabel: string; href: string }
-    | null;
+
+  let lastSession: GameStats | null = null;
+  if (session?.user?.id) {
+    try {
+      const userSnap = await adminDb.collection("users").doc(session.user.id).get();
+      const history: GameStats[] = userSnap.data()?.stats?.gameHistory ?? [];
+      lastSession = history.at(-1) ?? null;
+    } catch {
+      // silently fail — homepage shouldn't break if stats are unavailable
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -47,10 +62,23 @@ export default async function Home() {
 
                 <article className={styles.miniCard}>
                   <h3>Last Session Summary</h3>
-                  <p>
-                    Your latest score, streak, and top result will appear here.
-                  </p>
-                  <span className={styles.meta}>No session data yet</span>
+                  {lastSession ? (
+                    <>
+                      <p>{GAME_LABELS[lastSession.gameId] ?? lastSession.gameId}</p>
+                      <div className={styles.sessionStats}>
+                        <span>{lastSession.score} pts</span>
+                        <span>Streak · {lastSession.streak}</span>
+                      </div>
+                      <span className={styles.meta}>
+                        {new Date(lastSession.dateAchieved).toLocaleDateString()}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <p>Your latest score, streak, and top result will appear here.</p>
+                      <span className={styles.meta}>No session data yet</span>
+                    </>
+                  )}
                 </article>
 
                 <article className={styles.miniCard}>

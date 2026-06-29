@@ -26,7 +26,7 @@ export function BadgeCard({ item, onClaim }: BadgeCardProps) {
 						: "Claimed"}
 				</p>
 			)}
-			{!isUnlocked && <p>Locked</p>}
+			{!isUnlocked && !isClaimed && <p>Locked</p>}
 		</article>
 	);
 }
