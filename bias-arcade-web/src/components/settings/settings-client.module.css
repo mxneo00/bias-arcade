@@ -1,0 +1,124 @@
+.sections {
+    display: grid;
+    gap: 16px;
+}
+
+.panel {
+    background-color: var(--foreground);
+    border: 1px solid var(--button-secondary-border);
+    border-radius: 20px;
+    padding: 28px;
+    display: grid;
+    gap: 12px;
+}
+
+.dangerPanel {
+    border-color: #fca5a5;
+}
+
+.panel h2 {
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.description {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.form {
+    display: grid;
+    gap: 10px;
+    max-width: 360px;
+}
+
+.input {
+    padding: 10px 14px;
+    border: 1px solid var(--button-secondary-border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.input:focus {
+    border-color: #888;
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--button-secondary-border);
+    background: transparent;
+    color: var(--text-primary);
+    width: fit-content;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.buttonDanger {
+    background-color: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.buttonDanger:hover:not(:disabled) {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+.buttonSecondary {
+    background: transparent;
+    border-color: var(--button-secondary-border);
+    color: var(--text-primary);
+}
+
+.confirmRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.confirmText {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.error {
+    font-size: 14px;
+    color: #dc2626;
+}
+
+.success {
+    font-size: 14px;
+    color: #16a34a;
+}
+
+@media (prefers-color-scheme: dark) {
+    .dangerPanel {
+        border-color: #7f1d1d;
+    }
+
+    .input {
+        color-scheme: dark;
+    }
+
+    .error {
+        color: #f87171;
+    }
+
+    .success {
+        color: #4ade80;
+    }
+}

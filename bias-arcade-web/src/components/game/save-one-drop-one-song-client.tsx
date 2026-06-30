@@ -35,6 +35,7 @@ function SaveOneDropOneSongContent() {
 	const [score, setScore] = useState(0);
 
 	const [roundCap, setRoundCap] = useState<number>(0);
+	const [roundCapReached, setRoundCapReached] = useState(false);
 	const [showModeSelector, setShowModeSelector] = useState(false);
 	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
 
@@ -86,6 +87,12 @@ function SaveOneDropOneSongContent() {
 
 				if (body?.code === "SPOTIFY_REAUTH_REQUIRED") {
 					setRequireSpotifyReconnect(true);
+				}
+
+				if (body?.code === "MAX_ROUNDS_REACHED") {
+					setRoundCapReached(true);
+					setView("results");
+					return;
 				}
 
 				const details = body?.details
@@ -361,6 +368,9 @@ function SaveOneDropOneSongContent() {
 					<section className={styles.panel}>
 						<div className={styles.resultsHeader}>
 							<h2>Round Results</h2>
+							{roundCapReached ? (
+								<p>The round limit has been reached — this game session must end now.</p>
+							) : null}
 						</div>
 						<section className={styles.resultsSongs}>
 							<div className={styles.resultSong}>

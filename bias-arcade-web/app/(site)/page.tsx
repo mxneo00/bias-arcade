@@ -38,7 +38,7 @@ export default async function Home() {
               <p className={styles.eyebrow}>Dashboard</p>
               <h1>Ready for your next round?</h1>
               <p>
-                Jump back in instantly or continue from where you left off.
+                Pick a game and jump in whenever you&apos;re ready.
               </p>
               <div className={styles.ctas}>
                 <Link href="/games" className={styles.primary}>
@@ -46,8 +46,8 @@ export default async function Home() {
                 </Link>
               </div>
               <p className={styles.hint}>
-                Make sure Spotify is connected before playing. NOTE: a PREMIUM Spotify subscription is required.{" "}
-                <Link href="/profile">Check your profile</Link>.
+                A PREMIUM Spotify subscription is required.{" "}
+                <Link href="/profile">Check your profile</Link> to verify your connection.
               </p>
             </section>
 
@@ -120,6 +120,10 @@ export default async function Home() {
               <h2>How it works</h2>
               <ol className={styles.steps}>
                 <li>
+                  <h3>Sign in</h3>
+                  <p>Create an account to access games and track your progress.</p>
+                </li>
+                <li>
                   <h3>Choose a game</h3>
                   <p>Pick a mode and jump in with one click.</p>
                 </li>
@@ -129,7 +133,7 @@ export default async function Home() {
                 </li>
                 <li>
                   <h3>Track your progress</h3>
-                  <p>Sign in to keep your profile and come back anytime.</p>
+                  <p>Earn points and track your achievements to see your progress over time.</p>
                 </li>
               </ol>
             </section>

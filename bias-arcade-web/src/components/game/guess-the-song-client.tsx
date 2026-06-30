@@ -53,6 +53,7 @@ function GuessTheSongContent() {
 	} | null>(null);
 
 	const [roundCap, setRoundCap] = useState<number>(0);
+	const [roundCapReached, setRoundCapReached] = useState(false);
 	const [showModeSelector, setShowModeSelector] = useState(false);
 	const [gameMode, setGameMode] = useState<"all-kpop" | "artist-select">("all-kpop");
 	const [hintsUsed, setHintsUsed] = useState<{ artist: boolean; album: boolean }>({ artist: false, album: false });
@@ -110,6 +111,12 @@ function GuessTheSongContent() {
 
 				if (body?.code === "SPOTIFY_REAUTH_REQUIRED") {
 					setRequireSpotifyReconnect(true);
+				}
+
+				if (body?.code === "MAX_ROUNDS_REACHED") {
+					setRoundCapReached(true);
+					setView("results");
+					return;
 				}
 
 				const details = body?.details
@@ -457,7 +464,7 @@ function GuessTheSongContent() {
 					<section className={styles.panel}>
 						<div className={styles.panelHeader}>
 							<h2>Round Results</h2>
-							<p>Review the correct answer, scoring details, and choose what to do next.</p>
+							<p>{roundCapReached ? "The round limit has been reached — this game session must end now." : "Review the correct answer, scoring details, and choose what to do next."}</p>
 						</div>
 
 						<p className={styles.result}>
