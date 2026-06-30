@@ -558,7 +558,9 @@ All badges in [src/lib/collections/badges.ts](bias-arcade-web/src/lib/collection
 
 The `currentStreak` in `UserStats` is set directly from the streak value sent by the client at game end. There is no server-side validation of the streak count, and there is no distinction between a "game-level" streak (consecutive correct rounds within a single game) and a "session-level" streak (consecutive games played). Currently both Guess the Song and SODO send different streak interpretations to the same field.
 
-**Next step**: Clarify the streak definition and enforce it server-side.
+**Related bug**: Because only the end-of-game streak value is sent, a player's highest streak within a game is lost if the game continues after that peak.
+
+**Next step**: Clarify the streak definition, track and send an additional `highestStreak` value along with `currentStreak`, and enforce it server-side.
 
 ### No Pagination on Game History
 
@@ -596,3 +598,5 @@ The artist registry is a large hardcoded TypeScript file (~700 lines). Adding a 
 
 - Properly design a UI that suits the atmosphere of the application
 - Add accessibilty features
+- Provide opportunity for artist additions for Artist Select game modes.
+- Implement daily challenge: Randomly select a game and game mode that will rotate everyday. (Examples: GTS - Artist Select - Ateez, SODO - Artist Select - Shinee + Got7)

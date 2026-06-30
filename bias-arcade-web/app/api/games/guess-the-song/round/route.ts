@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (session.maxRounds > 0 && session.roundNumber >= session.maxRounds) {
-      return NextResponse.json({ error: "Maximum rounds reached" }, { status: 400 });
+      return NextResponse.json({ error: "Maximum rounds reached", code: "MAX_ROUNDS_REACHED" }, { status: 400 });
     }
     const optionsCount = session.settings.optionsCount;
     if (session.settings.scope.type === "all-kpop") {

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import styles from "./page.module.css";
 import { authOptions } from "@/server/auth";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SettingsClient } from "@/components/settings/settings-client";
 
 export default async function SettingsPage() {
     const session = await getServerSession(authOptions);
@@ -19,16 +20,10 @@ export default async function SettingsPage() {
             <main className={styles.main}>
                 <section className={styles.pageHeader}>
                     <h1>Settings</h1>
-                    <p>Settings management is coming soon.</p>
+                    <p>Manage your account and game data.</p>
                 </section>
 
-                <section className={styles.panel}>
-                    <h2>Coming Soon</h2>
-                    <p>
-                        This page will let you update your account preferences and app settings in a
-                        future release.
-                    </p>
-                </section>
+                <SettingsClient currentDisplayName={session.user.name ?? null} />
             </main>
         </div>
     );
